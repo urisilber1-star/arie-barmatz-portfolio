@@ -19,9 +19,11 @@ const ARTWORKS = [{"id": "616", "index": 0, "title": "ללא כותרת", "year"
 /* ---------------------------------------------------------
    IMAGE WITH FALLBACK
 --------------------------------------------------------- */
-function ArtImage({ src, alt, natural }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
+function ArtImage({ sources, alt, natural }) {
+  const list = Array.isArray(sources) ? sources.filter(Boolean) : [sources];
+  const [i, setI] = useState(0);
+
+  if (i >= list.length) {
     return (
       <div
         style={{
@@ -40,10 +42,11 @@ function ArtImage({ src, alt, natural }) {
   }
   return (
     <img
-      src={src}
+      key={list[i]}
+      src={list[i]}
       alt={alt}
       loading="lazy"
-      onError={() => setFailed(true)}
+      onError={() => setI((n) => n + 1)}
       style={
         natural
           ? { width: "100%", maxHeight: "70vh", objectFit: "contain", display: "block", background: "#E3DCCB" }
@@ -59,7 +62,7 @@ function ArtImage({ src, alt, natural }) {
 function Placard({ art, onClick }) {
   return (
     <div style={{ cursor: "pointer" }} onClick={onClick}>
-      <ArtImage src={art.thumbUrl} alt={art.title} />
+      <ArtImage sources={[art.thumbUrl, art.imageUrl]} alt={art.title} />
       <div style={{ paddingTop: 10 }}>
         <div
           style={{
@@ -103,11 +106,21 @@ function Placard({ art, onClick }) {
 /* ---------------------------------------------------------
    LIGHTBOX
 --------------------------------------------------------- */
-function bigImageUrl(art) {
-  // The uc?export=view endpoint gets blocked/rate-limited by Google at this
-  // scale; the thumbnail endpoint (used for the grid) is far more reliable,
-  // so reuse it here at a larger size instead of art.imageUrl.
-  return art.thumbUrl.replace(/sz=w\d+/, "sz=w1600");
+function bigImageUrls(art) {
+  // Try several Drive URL formats/sizes in order — different endpoints get
+  // rate-limited or blocked independently, so falling back across all of
+  // them maximizes the odds one actually loads.
+  const idMatch = (art.thumbUrl || "").match(/id=([^&]+)/);
+  const id = idMatch ? idMatch[1] : null;
+  const urls = [];
+  if (id) {
+    urls.push(`https://drive.google.com/thumbnail?id=${id}&sz=w2000`);
+    urls.push(`https://drive.google.com/thumbnail?id=${id}&sz=w1000`);
+    urls.push(`https://lh3.googleusercontent.com/d/${id}=w1600`);
+  }
+  urls.push(art.imageUrl);
+  urls.push(art.thumbUrl);
+  return urls;
 }
 
 function Lightbox({ art, onClose }) {
@@ -138,7 +151,7 @@ function Lightbox({ art, onClose }) {
           position: "relative",
         }}
       >
-        <ArtImage src={bigImageUrl(art)} alt={art.title} natural />
+        <ArtImage key={art.id} sources={bigImageUrls(art)} alt={art.title} natural />
         <div style={{ padding: 24 }}>
           <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11, color: "#A66B33", direction: "ltr", textAlign: "right", marginBottom: 6 }}>
             מס' {art.id}
