@@ -19,13 +19,14 @@ const ARTWORKS = [{"id": "616", "index": 0, "title": "ללא כותרת", "year"
 /* ---------------------------------------------------------
    IMAGE WITH FALLBACK
 --------------------------------------------------------- */
-function ArtImage({ src, alt }) {
+function ArtImage({ src, alt, natural }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
       <div
         style={{
-          aspectRatio: "1 / 1",
+          aspectRatio: natural ? undefined : "1 / 1",
+          minHeight: natural ? 240 : undefined,
           background: "#E3DCCB",
           display: "flex",
           alignItems: "center",
@@ -43,7 +44,11 @@ function ArtImage({ src, alt }) {
       alt={alt}
       loading="lazy"
       onError={() => setFailed(true)}
-      style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block", background: "#E3DCCB" }}
+      style={
+        natural
+          ? { width: "100%", maxHeight: "70vh", objectFit: "contain", display: "block", background: "#E3DCCB" }
+          : { width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block", background: "#E3DCCB" }
+      }
     />
   );
 }
@@ -98,6 +103,13 @@ function Placard({ art, onClick }) {
 /* ---------------------------------------------------------
    LIGHTBOX
 --------------------------------------------------------- */
+function bigImageUrl(art) {
+  // The uc?export=view endpoint gets blocked/rate-limited by Google at this
+  // scale; the thumbnail endpoint (used for the grid) is far more reliable,
+  // so reuse it here at a larger size instead of art.imageUrl.
+  return art.thumbUrl.replace(/sz=w\d+/, "sz=w1600");
+}
+
 function Lightbox({ art, onClose }) {
   if (!art) return null;
   return (
@@ -126,7 +138,7 @@ function Lightbox({ art, onClose }) {
           position: "relative",
         }}
       >
-        <ArtImage src={art.imageUrl} alt={art.title} />
+        <ArtImage src={bigImageUrl(art)} alt={art.title} natural />
         <div style={{ padding: 24 }}>
           <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11, color: "#A66B33", direction: "ltr", textAlign: "right", marginBottom: 6 }}>
             מס' {art.id}
