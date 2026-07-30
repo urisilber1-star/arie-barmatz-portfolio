@@ -1,6 +1,15 @@
 import React, { useState, useMemo } from "react";
 import { Menu, X, Mail, Phone, ImageOff } from "lucide-react";
 
+
+// Images already migrated to local static files (no longer depend on
+// Google Drive hotlinking). Grows over time as more are migrated.
+const LOCAL_IMAGES = new Set(["616", "619", "620", "621", "623", "625", "626", "628", "630", "631", "637", "641", "644", "646", "648", "649", "652", "656", "658", "660", "662", "664", "665", "667", "671", "673", "676", "678", "682", "684", "685", "687", "690", "693", "695", "696", "698", "700", "702", "703", "707", "708", "713", "716", "718", "719", "722", "724", "727", "728", "731", "734", "736", "737", "738", "740", "742", "744", "747", "750", "752", "754", "757", "758", "759", "760", "761", "764", "765", "767", "768", "770", "771", "774", "776", "778", "780", "782", "785", "787", "789", "791", "793", "796", "798", "801", "803", "806", "807", "809", "811", "813", "814", "815", "816", "817", "818", "820", "1022", "2915"]);
+
+function localImageUrl(id) {
+  return LOCAL_IMAGES.has(id) ? `/images/${id}.jpg` : null;
+}
+
 const PORTRAIT_URL =
   "https://static.wixstatic.com/media/f3aabf_d4a4d16832cc404a93c3e848ed570c97~mv2.png";
 
@@ -62,7 +71,7 @@ function ArtImage({ sources, alt, natural }) {
 function Placard({ art, onClick }) {
   return (
     <div style={{ cursor: "pointer" }} onClick={onClick}>
-      <ArtImage sources={[art.thumbUrl, art.imageUrl]} alt={art.title} />
+      <ArtImage sources={[localImageUrl(art.id), art.thumbUrl, art.imageUrl]} alt={art.title} />
       <div style={{ paddingTop: 10 }}>
         <div
           style={{
@@ -151,7 +160,7 @@ function Lightbox({ art, onClose }) {
           position: "relative",
         }}
       >
-        <ArtImage key={art.id} sources={bigImageUrls(art)} alt={art.title} natural />
+        <ArtImage key={art.id} sources={[localImageUrl(art.id), ...bigImageUrls(art)]} alt={art.title} natural />
         <div style={{ padding: 24 }}>
           <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11, color: "#A66B33", direction: "ltr", textAlign: "right", marginBottom: 6 }}>
             מס' {art.id}
