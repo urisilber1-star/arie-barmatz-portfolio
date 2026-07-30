@@ -463,6 +463,29 @@ function Gallery({ artworks, title, intro }) {
    CONTACT
 --------------------------------------------------------- */
 function Contact() {
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSending(true);
+    const form = e.target;
+    try {
+      const res = await fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        setSent(true);
+        form.reset();
+      }
+    } catch (err) {
+      // fall through — user can retry
+    }
+    setSending(false);
+  };
+
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "48px 24px 100px" }}>
       <h2 style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: 32, fontWeight: 700, color: "#221D17", marginBottom: 8 }}>צרו קשר</h2>
@@ -477,14 +500,44 @@ function Contact() {
             <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 14, color: "#221D17", direction: "ltr" }}>054-563-6612</span>
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {["שם", "אימייל"].map((label) => (
-            <input key={label} placeholder={label} style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }} />
-          ))}
-          <textarea placeholder="הודעה" rows={5} style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17", resize: "vertical" }} />
-          <button style={{ ...btnPrimary, alignSelf: "flex-start" }}>שליחה</button>
-          <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 10, color: "#A66B33" }}>טופס זה טרם מחובר לשליחה בפועל.</div>
-        </div>
+        {sent ? (
+          <div style={{ fontFamily: "'Assistant', sans-serif", fontSize: 15, color: "#3E4A3B", padding: "20px 0" }}>
+            ההודעה נשלחה בהצלחה. תודה שפניתם!
+          </div>
+        ) : (
+          <form
+            action="https://formsubmit.co/silberdeb@gmail.com"
+            method="POST"
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: 14 }}
+          >
+            <input type="hidden" name="_subject" value="פנייה חדשה מאתר אריה ברמץ" />
+            <input type="hidden" name="_captcha" value="false" />
+            <input
+              name="name"
+              required
+              placeholder="שם"
+              style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }}
+            />
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="אימייל"
+              style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }}
+            />
+            <textarea
+              name="message"
+              required
+              placeholder="הודעה"
+              rows={5}
+              style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17", resize: "vertical" }}
+            />
+            <button type="submit" disabled={sending} style={{ ...btnPrimary, alignSelf: "flex-start", opacity: sending ? 0.6 : 1 }}>
+              {sending ? "שולח..." : "שליחה"}
+            </button>
+          </form>
+        )}
       </div>
       <style>{`@media (max-width: 700px) { .contact-grid { grid-template-columns: 1fr !important; } }`}</style>
     </div>
