@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Menu, X, Mail, Phone, ImageOff } from "lucide-react";
 
 
 // Images already migrated to local static files (no longer depend on
 // Google Drive hotlinking). Grows over time as more are migrated.
-const LOCAL_IMAGES = new Set(["616", "619", "620", "621", "623", "625", "626", "628", "630", "631", "637", "641", "644", "646", "648", "649", "652", "656", "658", "660", "662", "664", "665", "667", "671", "673", "676", "678", "682", "684", "685", "687", "690", "693", "695", "696", "698", "700", "702", "703", "707", "708", "713", "716", "718", "719", "722", "724", "727", "728", "731", "734", "736", "737", "738", "740", "742", "744", "747", "750", "752", "754", "757", "758", "759", "760", "761", "764", "765", "767", "768", "770", "771", "774", "776", "778", "780", "782", "785", "787", "789", "791", "793", "796", "798", "801", "803", "806", "807", "809", "811", "813", "814", "815", "816", "817", "818", "820", "1022", "2915"]);
+const LOCAL_IMAGES = new Set(["616", "619", "620", "621", "623", "625", "626", "628", "630", "631", "637", "641", "644", "646", "648", "649", "652", "656", "658", "660", "662", "664", "665", "667", "671", "673", "676", "678", "682", "684", "685", "687", "690", "693", "695", "696", "698", "700", "702", "703", "707", "708", "713", "716", "718", "719", "722", "724", "727", "728", "731", "734", "736", "737", "738", "740", "742", "744", "747", "750", "752", "754", "757", "758", "759", "760", "761", "764", "765", "767", "768", "770", "771", "774", "776", "778", "780", "782", "785", "787", "789", "791", "793", "796", "798", "801", "803", "806", "807", "809", "811", "813", "814", "815", "816", "817", "818", "820", "821", "823", "824", "825", "826", "827", "829", "830", "831", "833", "834", "835", "836", "837", "838", "839", "840", "841", "852", "854", "855", "857", "860", "861", "862", "863", "864", "865", "867", "869", "870", "871", "872", "873", "875", "876", "878", "879", "880", "881", "882", "883", "884", "885", "886", "887", "888", "889", "891", "892", "893", "895", "896", "897", "899", "900", "902", "904", "905", "906", "908", "910", "911", "912", "914", "917", "918", "919", "920", "921", "923", "924", "926", "927", "928", "929", "930", "931", "932", "933", "935", "937", "939", "940", "941", "942", "943", "944", "945", "947", "948", "949", "951", "953", "954", "956", "957", "959", "960", "962", "963", "965", "967", "969", "970", "971", "974", "979", "981", "982", "983", "984", "986", "987", "988", "989", "990", "991", "992", "996", "998", "999", "1003", "1004", "1005", "1006", "1007", "1008", "1009", "1010", "1011", "1012", "1013", "1014", "1015", "1016", "1017", "1018", "1019", "1020", "1021", "1022", "1023", "1024", "1025", "1026", "1028", "1029", "1030", "1031", "1032", "1033", "1034", "1035", "1036", "1037", "1038", "1039", "1040", "1041", "1042", "1043", "1044", "1045", "1046", "1047", "1048", "1049", "1050", "1051", "1052", "1053", "1054", "1055", "1056", "1057", "1058", "1059", "1060", "1061", "1062", "1063", "1064", "1065", "1066", "1067", "1071", "1072", "1073", "1074", "1075", "1076", "1077", "1079", "1081", "1082", "1083", "1085", "1087", "1088", "1089", "1090", "1091", "1092", "1093", "1094", "1095", "1096", "1097", "1100", "1101", "1105", "1107", "1109", "1110", "1111", "1112", "1115", "1116", "1117", "1119", "1121", "1122", "1123", "1124", "1125", "1126", "1127", "1128", "1129", "1130", "1131", "1132", "1133", "1134", "1135", "1136", "1137", "1138", "1139", "1140", "1141", "1142", "1143", "1145", "1150", "1152", "1156", "1158", "1160", "1161", "1164", "1166", "1167", "1172", "1173", "1176", "1182", "1184", "1185", "1187", "1189", "1190", "1191", "1194", "1195", "1204", "1205", "1209", "1210", "1211", "1212", "1213", "1215", "1216", "1217", "1218", "1219", "1220", "1221", "1222", "1223", "1226", "1227", "1232", "1234", "1235", "1237", "1241", "1249", "1252", "1253", "1254", "1256", "1257", "1258", "1259", "1260", "1262", "1267", "1269", "1272", "1274", "1294", "1296", "1298", "1299", "1300", "1302", "1303", "1306", "1308", "1309", "1311", "1312", "1313", "1316", "1317", "1318", "1320", "1322", "1323", "1324", "1326", "1328", "1331", "1333", "1334", "1335", "1336", "1338", "1340", "1341", "1342", "1345", "1346", "1354", "1355", "1357", "1358", "1359", "1360", "1361", "1362", "1363", "1364", "1365", "1366", "1367", "1370", "1371", "1372", "1373", "1374", "1375", "1376", "1378", "1379", "1384", "1389", "1392", "1394", "1396", "1397", "1398", "1399", "1400", "1401", "1402", "1405", "1407", "1408", "1409", "1410", "1411", "1412", "1413", "1414", "1415", "1416", "1417", "1418", "1419", "1420", "1421", "1423", "1424", "1425", "1426", "1427", "1428", "1429", "1430", "1431", "1432", "1433", "1434", "1435", "1436", "1437", "1439", "1441", "1442", "1443", "1444", "1445", "1446", "1447", "1448", "1449", "1450", "1451", "1452", "1453", "1455", "1457", "1458", "1459", "1460", "1461", "1462", "1464", "1465", "1466", "1469", "1471", "1473", "1474", "1475", "1476", "1482", "1483", "1484", "1487", "1488", "1489", "1490", "1491", "1492", "1496", "1497", "1498", "1499", "1500", "1501", "1502", "1503", "1504", "1505", "1506", "1507", "1508", "1509", "1510", "1511", "1512", "1513", "1515", "1517", "1523", "1525", "1986", "1991", "1994", "1995", "2003", "2008", "2009", "2012", "2013", "2015", "2018", "2022", "2024", "2026", "2028", "2031", "2032", "2034", "2036", "2038", "2040", "2043", "2045", "2047", "2049", "2053", "2054", "2057", "2060", "2063", "2065", "2067", "2070", "2074", "2077", "2088", "2090", "2093", "2095", "2097", "2101", "2104", "2106", "2108", "2111", "2113", "2119", "2121", "2123", "2126", "2128", "2131", "2133", "2136", "2138", "2140", "2143", "2153", "2155", "2157", "2161", "2163", "2169", "2173", "2176", "2179", "2181", "2183", "2185", "2187", "2189", "2192", "2194", "2196", "2200", "2202", "2203", "2206", "2207", "2210", "2212", "2215", "2217", "2220", "2222", "2225", "2229", "2231", "2234", "2237", "2239", "2241", "2243", "2247", "2249", "2259", "2262", "2266", "2270", "2272", "2275", "2277", "2281", "2285", "2290", "2293", "2296", "2317", "2321", "2323", "2329", "2332", "2336", "2338", "2342", "2346", "2347", "2356", "2359", "2361", "2365", "2379", "2391", "2393", "2406", "2409", "2429", "2436", "2437", "2454", "2457", "2460", "2462", "2465", "2470", "2472", "2475", "2477", "2479", "2481", "2484", "2485", "2486", "2489", "2490", "2491", "2494", "2496", "2504", "2507", "2509", "2513", "2517", "2521", "2523", "2529", "2533", "2535", "2538", "2542", "2543", "2547", "2550", "2557", "2560", "2561", "2563", "2565", "2567", "2571", "2573", "2575", "2577", "2579", "2580", "2583", "2584", "2586", "2588", "2590", "2593", "2597", "2600", "2604", "2606", "2610", "2617", "2618", "2621", "2627", "2629", "2632", "2634", "2635", "2637", "2638", "2640", "2642", "2645", "2647", "2648", "2651", "2653", "2655", "2658", "2661", "2663", "2665", "2666", "2668", "2669", "2670", "2681", "2684", "2689", "2691", "2707", "2710", "2711", "2712", "2713", "2714", "2716", "2718", "2721", "2733", "2735", "2736", "2738", "2740", "2741", "2743", "2744", "2746", "2747", "2748", "2750", "2752", "2755", "2759", "2762", "2766", "2769", "2771", "2774", "2775", "2779", "2781", "2782", "2783", "2784", "2786", "2787", "2789", "2793", "2797", "2799", "2808", "2816", "2840", "2842", "2844", "2847", "2848", "2850", "2855", "2860", "2862", "2863", "2864", "2869", "2872", "2874", "2875", "2877", "2878", "2880", "2882", "2885", "2888", "2890", "2893", "2895", "2896", "2898", "2901", "2908", "2910", "2913", "2915", "2921", "2926", "2927", "2932", "2935", "2936", "2937", "2953", "2954", "2955", "2957", "2959", "2960", "2961", "2963", "2966", "2968", "2970", "2971", "2972", "2973", "2976", "2985", "2994", "2997", "2998", "3000", "3001", "3002", "3003", "3004", "3005", "3007", "3008", "3012", "3014", "3015", "3018", "3019", "3022", "3025", "3029", "3035", "3037", "3039", "3040", "3044", "3046", "3051", "3052", "3057", "3060", "3065", "3066", "3067", "3068", "3070", "3071", "3072", "3073", "3074", "3075", "3076", "3077", "4501", "4502", "4503", "4504", "4505", "4506", "4507", "4508", "4509", "4510", "4511", "4512", "4513", "4514", "4515", "4516", "4518", "4519", "4520", "4521", "4522", "4523", "4524", "4525", "4526", "4527", "4528", "4529", "4530", "4531", "4532", "4533", "4534", "4535", "4536", "4537", "4538", "4539", "4540", "4541", "4542", "4543", "4544", "4545", "4546", "4547", "4548", "4549", "4550", "4551", "4552", "4553", "4554", "4555", "4556", "4557", "4558", "4559", "4560", "4561", "4562", "4563", "4564", "4565", "4566", "4567", "4568", "4569", "4570", "4571", "4572", "4573", "4574", "4575", "4576", "4577", "4578", "4579", "4580", "4581", "4582", "4583", "4585", "4586", "4587", "4588", "4589", "4590", "4591", "4592", "4593", "4594", "4595", "4596", "4597", "4598", "4599", "4600", "4601", "4602", "4603", "4604", "4605", "4606", "4607", "4608", "4609", "4610", "4611", "4612", "4613", "4614", "4615", "4616", "4617", "4618", "4619", "4620", "4621", "4622", "4623", "4624", "4625", "4626", "4627", "4628", "4630", "4631", "4632", "4633", "4634", "4635", "4636", "4637", "5001", "5002", "5003"]);
 
 function localImageUrl(id) {
   return LOCAL_IMAGES.has(id) ? `/images/${id}.jpg` : null;
@@ -377,41 +377,140 @@ function sortMixed(values) {
   return [...nums, ...words];
 }
 
+function MultiSelectFilter({ label, options, selected, setSelected }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const toggle = (opt) => {
+    setSelected((prev) => (prev.includes(opt) ? prev.filter((v) => v !== opt) : [...prev, opt]));
+  };
+
+  const buttonStyle = {
+    fontFamily: "'Assistant', sans-serif",
+    fontSize: 13,
+    padding: "9px 10px",
+    background: "#F7F3EA",
+    border: "1px solid #C9BFA9",
+    color: selected.length ? "#221D17" : "#8A7E6C",
+    borderRadius: 2,
+    width: "100%",
+    textAlign: "right",
+    cursor: "pointer",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" style={buttonStyle} onClick={() => setOpen((o) => !o)}>
+        <span>{selected.length ? `${label} (${selected.length})` : label}</span>
+        <span style={{ fontSize: 10, color: "#A66B33" }}>▾</span>
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            right: 0,
+            left: 0,
+            zIndex: 30,
+            background: "#F7F3EA",
+            border: "1px solid #C9BFA9",
+            borderRadius: 2,
+            maxHeight: 260,
+            overflowY: "auto",
+            boxShadow: "0 6px 18px #00000022",
+          }}
+        >
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelected([])}
+              style={{
+                width: "100%",
+                textAlign: "right",
+                background: "none",
+                border: "none",
+                borderBottom: "1px solid #C9BFA9",
+                padding: "8px 10px",
+                fontFamily: "'Assistant', sans-serif",
+                fontSize: 12,
+                color: "#8B4A3D",
+                cursor: "pointer",
+              }}
+            >
+              נקה בחירה
+            </button>
+          )}
+          {options.map((opt) => (
+            <label
+              key={opt}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                fontFamily: "'Assistant', sans-serif",
+                fontSize: 13,
+                color: "#221D17",
+                cursor: "pointer",
+              }}
+            >
+              <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggle(opt)} />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Gallery({ artworks, title, intro }) {
-  const [subject, setSubject] = useState("הכל");
-  const [technique, setTechnique] = useState("הכל");
-  const [year, setYear] = useState("הכל");
-  const [sizeCat, setSizeCat] = useState("הכל");
-  const [sizeDesc, setSizeDesc] = useState("הכל");
+  const [subjects_, setSubjects_] = useState([]);
+  const [techniques_, setTechniques_] = useState([]);
+  const [years_, setYears_] = useState([]);
+  const [sizeCats_, setSizeCats_] = useState([]);
+  const [sizeDescs_, setSizeDescs_] = useState([]);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(null);
 
-  const subjects = useMemo(() => ["הכל", ...Array.from(new Set(artworks.map((a) => a.subject))).sort((a, b) => a.localeCompare(b, "he"))], [artworks]);
-  const techniques = useMemo(() => ["הכל", ...Array.from(new Set(artworks.map((a) => a.technique))).sort((a, b) => a.localeCompare(b, "he"))], [artworks]);
-  const years = useMemo(() => ["הכל", ...sortMixed(Array.from(new Set(artworks.map((a) => a.year).filter(Boolean))))], [artworks]);
+  const subjects = useMemo(() => Array.from(new Set(artworks.map((a) => a.subject))).sort((a, b) => a.localeCompare(b, "he")), [artworks]);
+  const techniques = useMemo(() => Array.from(new Set(artworks.map((a) => a.technique))).sort((a, b) => a.localeCompare(b, "he")), [artworks]);
+  const years = useMemo(() => sortMixed(Array.from(new Set(artworks.map((a) => a.year).filter(Boolean)))), [artworks]);
   const sizeCats = useMemo(() => {
     const order = ["קטן מאוד", "קטן", "בינוני", "גדול", "גדול מאוד", "ענק"];
     const present = Array.from(new Set(artworks.map((a) => a.sizeCat).filter(Boolean)));
     present.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    return ["הכל", ...present];
+    return present;
   }, [artworks]);
-  const sizeDescs = useMemo(() => ["הכל", ...Array.from(new Set(artworks.map((a) => a.sizeDesc))).sort((a, b) => a.localeCompare(b, "he"))], [artworks]);
+  const sizeDescs = useMemo(() => Array.from(new Set(artworks.map((a) => a.sizeDesc))).sort((a, b) => a.localeCompare(b, "he")), [artworks]);
 
   const filtered = useMemo(() => {
     return artworks.filter((a) => {
-      if (subject !== "הכל" && a.subject !== subject) return false;
-      if (technique !== "הכל" && a.technique !== technique) return false;
-      if (year !== "הכל" && a.year !== year) return false;
-      if (sizeCat !== "הכל" && a.sizeCat !== sizeCat) return false;
-      if (sizeDesc !== "הכל" && a.sizeDesc !== sizeDesc) return false;
+      if (subjects_.length && !subjects_.includes(a.subject)) return false;
+      if (techniques_.length && !techniques_.includes(a.technique)) return false;
+      if (years_.length && !years_.includes(a.year)) return false;
+      if (sizeCats_.length && !sizeCats_.includes(a.sizeCat)) return false;
+      if (sizeDescs_.length && !sizeDescs_.includes(a.sizeDesc)) return false;
       if (query && !a.title.includes(query)) return false;
       return true;
     });
-  }, [artworks, subject, technique, year, sizeCat, sizeDesc, query]);
+  }, [artworks, subjects_, techniques_, years_, sizeCats_, sizeDescs_, query]);
 
-  const hasActiveFilters = subject !== "הכל" || technique !== "הכל" || year !== "הכל" || sizeCat !== "הכל" || sizeDesc !== "הכל" || query !== "";
+  const hasActiveFilters =
+    subjects_.length || techniques_.length || years_.length || sizeCats_.length || sizeDescs_.length || query !== "";
   const clearAll = () => {
-    setSubject("הכל"); setTechnique("הכל"); setYear("הכל"); setSizeCat("הכל"); setSizeDesc("הכל"); setQuery("");
+    setSubjects_([]); setTechniques_([]); setYears_([]); setSizeCats_([]); setSizeDescs_([]); setQuery("");
   };
 
   const selectStyle = {
@@ -433,11 +532,11 @@ function Gallery({ artworks, title, intro }) {
   };
 
   const filterFields = [
-    ["נושא", subject, setSubject, subjects],
-    ["טכניקה", technique, setTechnique, techniques],
-    ["שנה", year, setYear, years],
-    ["גודל — קטגוריה", sizeCat, setSizeCat, sizeCats],
-    ["גודל — תיאור", sizeDesc, setSizeDesc, sizeDescs],
+    ["נושא", subjects_, setSubjects_, subjects],
+    ["טכניקה", techniques_, setTechniques_, techniques],
+    ["שנה", years_, setYears_, years],
+    ["גודל — קטגוריה", sizeCats_, setSizeCats_, sizeCats],
+    ["גודל — תיאור", sizeDescs_, setSizeDescs_, sizeDescs],
   ];
 
   return (
@@ -456,12 +555,10 @@ function Gallery({ artworks, title, intro }) {
           />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14 }}>
-          {filterFields.map(([label, val, setter, options]) => (
+          {filterFields.map(([label, selected, setSelected, options]) => (
             <div key={label}>
               <label style={labelStyle}>{label}</label>
-              <select value={val} onChange={(e) => setter(e.target.value)} style={selectStyle}>
-                {options.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <MultiSelectFilter label={label} options={options} selected={selected} setSelected={setSelected} />
             </div>
           ))}
         </div>
