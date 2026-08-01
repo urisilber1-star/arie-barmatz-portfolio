@@ -275,8 +275,10 @@ function Home({ setPage }) {
           />
         </div>
         <div>
-          <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 12, color: "#A66B33", marginBottom: 14, direction: "ltr", textAlign: "right" }}>
-            1929–2016
+          <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 12, color: "#A66B33", marginBottom: 14, display: "flex", gap: 8, justifyContent: "flex-start" }}>
+            <span>1929</span>
+            <span>—</span>
+            <span>2016</span>
           </div>
           <h1 style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: "clamp(38px, 5vw, 56px)", fontWeight: 700, color: "#221D17", margin: "0 0 20px", lineHeight: 1.1 }}>
             אריה ברמץ
