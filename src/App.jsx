@@ -929,12 +929,15 @@ function Discover() {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 100px" }}>
-      <h2 style={{ fontFamily: displayFont, fontSize: 32, fontWeight: 700, color: "#221D17", margin: "0 0 8px" }}>
+      <h2 style={{ fontFamily: displayFont, fontSize: 32, fontWeight: 700, color: "#221D17", margin: "0 0 24px" }}>
         {t("discoverTitle")}
       </h2>
-      <p style={{ fontFamily: bodyFont, fontSize: 15, color: "#5F5449", maxWidth: 600, marginBottom: 30 }}>
-        {t("discoverIntro")}
-      </p>
+
+      <div style={{ marginBottom: 30 }}>
+        <button onClick={shuffle} style={{ ...btnPrimary, fontSize: 15, padding: "14px 32px" }}>
+          {t("shuffleBtn")}
+        </button>
+      </div>
 
       <div style={{ background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 3, overflow: "hidden" }}>
         <ArtImage
@@ -969,12 +972,6 @@ function Discover() {
             </p>
           </div>
         </div>
-      </div>
-
-      <div style={{ textAlign: "center", marginTop: 28 }}>
-        <button onClick={shuffle} style={{ ...btnPrimary, fontSize: 15, padding: "14px 32px" }}>
-          {t("shuffleBtn")}
-        </button>
       </div>
     </div>
   );
