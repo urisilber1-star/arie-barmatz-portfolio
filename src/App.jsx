@@ -1,10 +1,191 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Menu, X, Mail, Phone, ImageOff } from "lucide-react";
 
+/* ---------------------------------------------------------
+   INTERNATIONALIZATION
+   Default: Hebrew. Interface fully translated to English (UK),
+   Spanish (Spain), and Arabic. Catalog data itself (artwork
+   titles, detailed technique descriptions) stays in the
+   original Hebrew, matching standard archive/museum practice —
+   subject, technique-group, and size-category labels (a finite,
+   closed vocabulary) ARE translated since they drive the filters.
+--------------------------------------------------------- */
+const LanguageContext = React.createContext({ lang: "he", dir: "rtl", t: (k) => k, tv: (dict, v) => v });
+function useLang() {
+  return React.useContext(LanguageContext);
+}
+
+const UI = {
+  navHome: { he: "בית", en: "Home", es: "Inicio", ar: "الرئيسية" },
+  navGallery: { he: "גלריה מלאה", en: "Full Gallery", es: "Galería completa", ar: "المعرض الكامل" },
+  navSelected: { he: "יצירות נבחרות", en: "Selected Works", es: "Obras seleccionadas", ar: "أعمال مختارة" },
+  navContact: { he: "צרו קשר", en: "Contact", es: "Contacto", ar: "اتصل بنا" },
+  siteName: { he: "אריה ברמץ", en: "Arie Barmatz", es: "Arie Barmatz", ar: "آري بارماتس" },
+
+  heroTagline: { he: "שמן על בד — ארכיון יצירתו של האמן", en: "Oil on canvas — the artist's archive", es: "Óleo sobre lienzo — el archivo del artista", ar: "زيت على قماش — أرشيف أعمال الفنان" },
+  heroGalleryBtn: { he: "לגלריה המלאה", en: "View Full Gallery", es: "Ver galería completa", ar: "عرض المعرض الكامل" },
+  heroSelectedBtn: { he: "יצירות נבחרות", en: "Selected Works", es: "Obras seleccionadas", ar: "أعمال مختارة" },
+
+  quote: {
+    he: `אני זוכר כי בגיל 8, בשנת 1937 בערך, אבי הביא לביתנו מספר דפי נייר, לבנים ומשובחים, והניחם על שולחן הבית. איכות ולובן הנייר בהק בבהירות, וזרח לתוך עיני ועורר בי התרגשות מרובה שריכזה את כל תשומת לבי וריתקה אותי אליהם. לא זזתי ממקומי, רכנתי כל גופי וראשי עליהם, ולא יכולתי משום מה להתנתק. אינני זוכר ויודע כיצד נפל פתאום לידי עיפרון, העיפרון משך ודחף את ידי והחילותי לשרבט. והנה כי כן הנייר לבן אחד רדף את השני ונתמלא בהם נופים, אנשים, עצים, בתים גגות אדומים, דמויות, עגלות חמורים – כנראה כל מה שספגו עיני וזכרוני. ומאז אני מצייר.`,
+    en: `I remember that at the age of 8, around 1937, my father brought home a few sheets of paper — white and fine — and laid them on the table. The quality and whiteness of the paper shone so brightly it seemed to glow into my eyes, stirring in me a great excitement that gathered all my attention and drew me in completely. I didn't move from my spot; I bent my whole body and head over them, and for some reason I couldn't tear myself away. I don't remember or know how a pencil suddenly found its way into my hand, but the pencil pulled and pushed my hand, and I began to scribble. And so one white sheet followed another, filling up with landscapes, people, trees, houses with red roofs, figures, donkey carts — everything, it seems, that my eyes and memory had absorbed. And I have been drawing ever since.`,
+    es: `Recuerdo que a los 8 años, hacia 1937, mi padre trajo a casa varias hojas de papel, blancas y de gran calidad, y las dejó sobre la mesa. La blancura y calidad del papel brillaba con tal claridad que parecía resplandecer ante mis ojos, despertando en mí una emoción tan intensa que concentró toda mi atención y me cautivó por completo. No me moví de mi sitio; incliné todo mi cuerpo y mi cabeza sobre ellas, y por alguna razón no podía apartarme. No recuerdo ni sé cómo llegó de pronto un lápiz a mi mano, pero el lápiz tiró y empujó mi mano, y comencé a garabatear. Y así, una hoja blanca siguió a la otra, llenándose de paisajes, personas, árboles, casas de tejados rojos, figuras, carros tirados por burros — todo, al parecer, lo que mis ojos y mi memoria habían absorbido. Y desde entonces, dibujo.`,
+    ar: `أتذكر أنني في سن الثامنة، حوالي عام 1937، أحضر والدي إلى بيتنا عدة أوراق بيضاء فاخرة، ووضعها على طاولة البيت. كانت جودة الورق وبياضه يلمعان بوضوح، وأشرقا في عينيّ وأثارا فيّ حماسًا شديدًا استحوذ على كل انتباهي وشدّني إليه. لم أتحرك من مكاني، انحنيت بكل جسدي ورأسي فوقها، ولم أستطع لسبب ما أن أنفصل عنها. لا أتذكر ولا أعرف كيف وقع قلم رصاص فجأة في يدي، لكن القلم جذب يدي ودفعها، وبدأت أخربش. وهكذا تبعت ورقة بيضاء أخرى، وامتلأت بمناظر طبيعية، وأناس، وأشجار، وبيوت ذات أسطح حمراء، وأشكال، وعربات يجرّها الحمير – على ما يبدو كل ما استوعبته عيناي وذاكرتي. ومنذ ذلك الحين وأنا أرسم.`,
+  },
+
+  bioTitle: { he: "אני מאת עצמי", en: "In My Own Words", es: "En mis propias palabras", ar: "بكلماتي" },
+  bio: {
+    he: [
+      `אריה ברמץ (1929-2016), יליד ירושלים, גילה את כישרונו האמנותי ומשיכתו לציור בגיל צעיר מאד. הוא לא זכה לחינוך אמנותי מסודר ורכש את ידיעותיו על אמנות הציור מהתבוננות ביצירותיהם של אמנים דגולים בכלל ושל אמנים ישראלים ידועים בפרט. בעודו נער, רשם רישומים, תוך התבוננות בתצלומים ובדמויות שסובבו אותו בשכונה הירושלמית בה התגורר עם הוריו.`,
+      `אריה ברמץ התחנך במסגרות דתיות ציוניות ששילבו לימודי קודש עם לימודים כלליים. בצעירותו היה פעיל בתנועת הנוער "בני עקיבא" שם, בנוסף להדרכה, התבלט בכישוריו האמנותיים והיה אחראי על קישוט אירועים, עיצוב כרזות ועוד.`,
+      `בבגרותו עבד במחלקת החינוך בעיריית ירושלים ומילא בה תפקידים מרכזיים רבים הקשורים לחינוך ולרווחה. במקביל הצליח להביא לידי ביטוי את הצד האמנותי שבו על ידי ניהול, ארגון והפקת אירועי תרבות שיזמה העירייה, באיור ובציור לאירועים אלו ובעיצוב וציור כרזות ופרסומים. במסגרת תפקידו במחלקת החינוך הוא נפגש עם סופרים, אמנים ואנשי רוח. עם רבים מהם, ביניהם ש"י עגנון, קשר קשרי ידידות אמיצים שנמשכו לאורך שנים.`,
+      `עם התפתחותו האמנותית, הסגנון הפיגורטיבי של רישומיו וציוריו שינה כיוון למופשט ולסמלי, בהשראת הרוח החדשנית ופורצת הדרך של אמני "אופקים חדשים". עם זאת, מעולם לא זנח ציור דמויות.`,
+      `מורשתו האמנותית כוללת מעל אלף ציורים, רישומים וקולאז'ים. התבוננות ביצירותיו מגלה את אהדתו למרק שאגאל, לנפתלי בזם ולמרדכי ארדון. בהמשך למורשתם, ציוריו של ברמץ מאופיינים במרכיבים סוריאליסטיים וסמליים השואבים הן מן האמנות המערבית והן מן העולם היהודי.`,
+    ],
+    en: [
+      `Arie Barmatz (1929–2016), born in Jerusalem, discovered his artistic talent and his pull toward painting at a very young age. He never received formal art education, and gained his knowledge of painting by observing the work of great artists in general, and well-known Israeli artists in particular. As a boy, he made drawings by studying photographs and the figures around him in the Jerusalem neighborhood where he lived with his parents.`,
+      `Arie Barmatz was educated within religious-Zionist frameworks that combined religious study with general education. In his youth he was active in the "Bnei Akiva" youth movement, where, alongside counseling, his artistic abilities stood out — he was responsible for decorating events, designing posters, and more.`,
+      `As an adult he worked in the Education Department of the Jerusalem Municipality, holding several central positions related to education and welfare. Alongside this, he found ways to express his artistic side by managing, organizing, and producing cultural events initiated by the municipality — illustrating and painting for these events, and designing and painting posters and publications. Through his role in the Education Department he met writers, artists, and intellectuals. With many of them, including S. Y. Agnon, he formed close friendships that lasted for years.`,
+      `As his art developed, the figurative style of his drawings and paintings shifted toward the abstract and the symbolic, inspired by the innovative, boundary-pushing spirit of the "Ofakim Hadashim" (New Horizons) artists. Even so, he never abandoned painting the human figure.`,
+      `His artistic legacy includes over a thousand paintings, drawings, and collages. Looking at his work reveals his affinity for Marc Chagall, Naftali Bezem, and Mordecai Ardon. Following in their footsteps, Barmatz's paintings are marked by surrealist and symbolic elements drawn from both Western art and the Jewish world.`,
+    ],
+    es: [
+      `Arie Barmatz (1929-2016), nacido en Jerusalén, descubrió su talento artístico y su atracción por la pintura desde muy joven. Nunca recibió educación artística formal, y adquirió sus conocimientos de pintura observando las obras de grandes artistas en general, y de reconocidos artistas israelíes en particular. De niño, hacía dibujos observando fotografías y las figuras que lo rodeaban en el barrio de Jerusalén donde vivía con sus padres.`,
+      `Arie Barmatz se educó en instituciones religioso-sionistas que combinaban estudios religiosos con estudios generales. En su juventud fue activo en el movimiento juvenil "Bnei Akiva", donde, además de ser instructor, destacó por sus habilidades artísticas y fue responsable de la decoración de eventos, el diseño de carteles y más.`,
+      `En su vida adulta trabajó en el Departamento de Educación del Ayuntamiento de Jerusalén, donde ocupó numerosos cargos centrales relacionados con la educación y el bienestar social. Al mismo tiempo, logró expresar su lado artístico gestionando, organizando y produciendo eventos culturales impulsados por el ayuntamiento, ilustrando y pintando para estos eventos, y diseñando y pintando carteles y publicaciones. En el marco de su trabajo en el Departamento de Educación conoció a escritores, artistas y hombres de letras. Con muchos de ellos, entre ellos S. Y. Agnón, mantuvo estrechas amistades que perduraron durante años.`,
+      `Con su desarrollo artístico, el estilo figurativo de sus dibujos y pinturas cambió hacia lo abstracto y lo simbólico, inspirado por el espíritu innovador y pionero de los artistas de "Ofakim Hadashim" (Nuevos Horizontes). Aun así, nunca abandonó la pintura de figuras.`,
+      `Su legado artístico incluye más de mil pinturas, dibujos y collages. Al observar sus obras se percibe su afinidad con Marc Chagall, Naftali Bezem y Mordecai Ardon. Siguiendo su legado, las pinturas de Barmatz se caracterizan por elementos surrealistas y simbólicos que beben tanto del arte occidental como del mundo judío.`,
+    ],
+    ar: [
+      `آري بارماتس (1929-2016)، من مواليد القدس، اكتشف موهبته الفنية وانجذابه للرسم في سن مبكرة جدًا. لم يحظَ بتعليم فني رسمي، واكتسب معرفته بفن الرسم من خلال التأمل في أعمال فنانين عظماء بشكل عام، وفنانين إسرائيليين معروفين بشكل خاص. وهو صبي، كان يرسم من خلال التأمل في الصور والأشخاص من حوله في الحي المقدسي الذي عاش فيه مع والديه.`,
+      `تلقى آري بارماتس تعليمه في مؤسسات دينية صهيونية جمعت بين الدراسات الدينية والعامة. في شبابه كان نشطًا في حركة الشباب "بني عكيفا"، حيث برز، إلى جانب دوره كمرشد، بمهاراته الفنية وكان مسؤولاً عن تزيين الفعاليات وتصميم الملصقات وغير ذلك.`,
+      `في مرحلة بلوغه، عمل في دائرة التعليم ببلدية القدس وشغل فيها مناصب مركزية عديدة متعلقة بالتعليم والرفاه. وفي الوقت نفسه، نجح في التعبير عن جانبه الفني من خلال إدارة وتنظيم وإنتاج الفعاليات الثقافية التي بادرت بها البلدية، من خلال الرسم والتصوير لهذه الفعاليات وتصميم ورسم الملصقات والمنشورات. ومن خلال عمله في دائرة التعليم، التقى بكتّاب وفنانين ومفكرين. ومع كثيرين منهم، من بينهم ش. ي. عجنون، أقام صداقات وثيقة استمرت لسنوات.`,
+      `مع تطوره الفني، تحول الأسلوب التصويري في رسوماته ولوحاته نحو التجريد والرمزية، مستلهمًا الروح المبتكرة والرائدة لفناني "أوفكيم حداشيم" (آفاق جديدة). ومع ذلك، لم يتخلَّ أبدًا عن رسم الأشخاص.`,
+      `يشمل إرثه الفني أكثر من ألف لوحة ورسمة وعمل كولاج. يكشف التأمل في أعماله عن تعاطفه مع مارك شاغال، ونفتالي بيزم، ومردخاي أردون. وسيرًا على نهجهم، تتميز لوحات بارماتس بعناصر سريالية ورمزية مستمدة من الفن الغربي ومن العالم اليهودي على حد سواء.`,
+    ],
+  },
+
+  galleryTitle: { he: "גלריה מלאה", en: "Full Gallery", es: "Galería completa", ar: "المعرض الكامل" },
+  galleryIntro: { he: "יצירות קטלוגיות, ניתנות לסינון לפי נושא, טכניקה, שנה, גודל ועוד.", en: "Cataloged artworks, filterable by subject, technique, year, size, and more.", es: "Obras catalogadas, filtrables por tema, técnica, año, tamaño y más.", ar: "أعمال مصنّفة، قابلة للتصفية حسب الموضوع والتقنية والسنة والحجم والمزيد." },
+  selectedTitle: { he: "יצירות נבחרות", en: "Selected Works", es: "Obras seleccionadas", ar: "أعمال مختارة" },
+  selectedIntro: { he: "מבחר ראשוני שנפרש על פני הארכיון — יעודכן בהמשך לפי בחירה אישית.", en: "An initial selection spread across the archive — to be curated further by hand.", es: "Una selección inicial distribuida por todo el archivo — se irá curando manualmente más adelante.", ar: "اختيار أولي موزّع عبر الأرشيف — سيتم تنسيقه لاحقًا يدويًا." },
+
+  searchTitle: { he: "חיפוש לפי כותרת", en: "Search by title", es: "Buscar por título", ar: "البحث حسب العنوان" },
+  searchTitlePlaceholder: { he: "הקלידו מילה מתוך הכותרת...", en: "Type a word from the title...", es: "Escriba una palabra del título...", ar: "اكتب كلمة من العنوان..." },
+  searchNumber: { he: "חיפוש לפי מספר קטלוגי", en: "Search by catalog number", es: "Buscar por número de catálogo", ar: "البحث حسب الرقم" },
+  searchNumberPlaceholder: { he: "למשל 616", en: "e.g. 616", es: "p. ej. 616", ar: "مثال: 616" },
+
+  filterSubject: { he: "נושא", en: "Subject", es: "Tema", ar: "الموضوع" },
+  filterClusters: { he: "קבוצת טכניקה", en: "Technique Group", es: "Grupo de técnica", ar: "مجموعة التقنية" },
+  filterTechniques: { he: "טכניקה מפורטת", en: "Detailed Technique", es: "Técnica detallada", ar: "التقنية التفصيلية" },
+  filterSizeCat: { he: "גודל — קטגוריה", en: "Size — Category", es: "Tamaño — Categoría", ar: "الحجم — الفئة" },
+  filterYear: { he: "שנה", en: "Year", es: "Año", ar: "السنة" },
+  filterLength: { he: "אורך (ס\"מ)", en: "Length (cm)", es: "Longitud (cm)", ar: "الطول (سم)" },
+  filterWidth: { he: "רוחב (ס\"מ)", en: "Width (cm)", es: "Ancho (cm)", ar: "العرض (سم)" },
+
+  clearSelection: { he: "נקה בחירה", en: "Clear", es: "Borrar", ar: "مسح" },
+  clearFilters: { he: "נקה סינון", en: "Clear filters", es: "Borrar filtros", ar: "مسح الفلاتر" },
+  noOptions: { he: "אין אפשרויות תואמות", en: "No matching options", es: "No hay opciones coincidentes", ar: "لا توجد خيارات مطابقة" },
+  noResults: { he: "לא נמצאו יצירות התואמות את הסינון.", en: "No artworks match the current filters.", es: "No se encontraron obras que coincidan con los filtros.", ar: "لا توجد أعمال تطابق الفلاتر الحالية." },
+
+  catalogNo: { he: "מס'", en: "No.", es: "N.º", ar: "رقم" },
+  unknownDate: { he: "תאריך לא ידוע", en: "Date unknown", es: "Fecha desconocida", ar: "تاريخ غير معروف" },
+  imageMissing: { he: "לא נמצאה תמונה בתיקייה", en: "Image not yet available", es: "Imagen aún no disponible", ar: "الصورة غير متوفرة بعد" },
+  fieldYear: { he: "שנה", en: "Year", es: "Año", ar: "السنة" },
+  fieldSubject: { he: "נושא", en: "Subject", es: "Tema", ar: "الموضوع" },
+  fieldTechnique: { he: "טכניקה", en: "Technique", es: "Técnica", ar: "التقنية" },
+  fieldSize: { he: "מידות", en: "Dimensions", es: "Dimensiones", ar: "الأبعاد" },
+  unknown: { he: "לא ידוע", en: "Unknown", es: "Desconocido", ar: "غير معروف" },
+
+  contactTitle: { he: "צרו קשר", en: "Contact", es: "Contacto", ar: "اتصل بنا" },
+  contactIntro: { he: "לפניות בנוגע לאוסף, לתערוכות או לשימוש ביצירות.", en: "For inquiries about the collection, exhibitions, or use of the artworks.", es: "Para consultas sobre la colección, exposiciones o el uso de las obras.", ar: "للاستفسارات المتعلقة بالمجموعة أو المعارض أو استخدام الأعمال." },
+  formName: { he: "שם", en: "Name", es: "Nombre", ar: "الاسم" },
+  formEmail: { he: "אימייל", en: "Email", es: "Correo electrónico", ar: "البريد الإلكتروني" },
+  formMessage: { he: "הודעה", en: "Message", es: "Mensaje", ar: "الرسالة" },
+  formSubmit: { he: "שליחה", en: "Send", es: "Enviar", ar: "إرسال" },
+  formSending: { he: "שולח...", en: "Sending...", es: "Enviando...", ar: "جارٍ الإرسال..." },
+  formSuccess: { he: "ההודעה נשלחה בהצלחה. תודה שפניתם!", en: "Your message was sent successfully. Thank you for reaching out!", es: "Su mensaje se envió correctamente. ¡Gracias por contactarnos!", ar: "تم إرسال رسالتك بنجاح. شكرًا لتواصلك معنا!" },
+
+  footer: { he: "אריה ברמץ — שמן על בד © כל הזכויות שמורות למשפחה", en: "Arie Barmatz — Oil on Canvas © All rights reserved to the family", es: "Arie Barmatz — Óleo sobre lienzo © Todos los derechos reservados a la familia", ar: "آري بارماتس — زيت على قماش © جميع الحقوق محفوظة للعائلة" },
+
+  navDiscover: { he: "גילוי אקראי", en: "Discover", es: "Descubrir", ar: "اكتشف" },
+  discoverTitle: { he: "גילוי אקראי", en: "Discover", es: "Descubrir", ar: "اكتشف" },
+  discoverIntro: { he: "לחצו על הכפתור כדי לגלות יצירה אקראית מהאוסף, לצד ניתוח קצר.", en: "Press the button to discover a random artwork from the collection, along with a short analysis.", es: "Pulse el botón para descubrir una obra aleatoria de la colección, junto con un breve análisis.", ar: "اضغط على الزر لاكتشاف عمل عشوائي من المجموعة، مع تحليل موجز." },
+  shuffleBtn: { he: "יצירה אקראית", en: "Shuffle", es: "Aleatorio", ar: "تبديل عشوائي" },
+  analysisLabel: { he: "ניתוח", en: "Analysis", es: "Análisis", ar: "تحليل" },
+  analysisDisclaimer: { he: "ניתוח פרשני קצר, המבוסס על המדיה, הנושא והממדים של היצירה.", en: "A brief interpretive analysis, based on the artwork's medium, subject, and dimensions.", es: "Un breve análisis interpretativo, basado en la técnica, el tema y las dimensiones de la obra.", ar: "تحليل تفسيري موجز، يستند إلى وسيط العمل وموضوعه وأبعاده." },
+};
+
+// finite, closed vocabularies used as filter values — translated so the
+// filter UI is fully localized, while the underlying data value (used for
+// matching) stays the original Hebrew.
+const SUBJECT_TR = {
+  "אבסטרק": { en: "Abstract", es: "Abstracto", ar: "تجريدي" },
+  "אחרית הימים": { en: "End of Days", es: "Fin de los días", ar: "آخر الزمان" },
+  "בבית": { en: "At Home", es: "En casa", ar: "في المنزل" },
+  "בחצר": { en: "In the Yard", es: "En el patio", ar: "في الفناء" },
+  "בתים": { en: "Houses", es: "Casas", ar: "بيوت" },
+  "דומם": { en: "Still Life", es: "Naturaleza muerta", ar: "طبيعة صامتة" },
+  "דמויות": { en: "Figures", es: "Figuras", ar: "أشخاص" },
+  "חד-פעמי": { en: "One of a Kind", es: "Único", ar: "فريد من نوعه" },
+  "טבע": { en: "Nature", es: "Naturaleza", ar: "طبيعة" },
+  "טבע דומם": { en: "Still Life", es: "Naturaleza muerta", ar: "طبيعة صامتة" },
+  "טבע ודמויות": { en: "Nature & Figures", es: "Naturaleza y figuras", ar: "طبيعة وأشخاص" },
+  "טבע וטבע דומם": { en: "Nature & Still Life", es: "Naturaleza y naturaleza muerta", ar: "طبيعة وطبيعة صامتة" },
+  "יהדות": { en: "Judaism", es: "Judaísmo", ar: "اليهودية" },
+  "לא צוין": { en: "Unspecified", es: "No especificado", ar: "غير محدد" },
+  "מאה שערים": { en: "Mea Shearim", es: "Mea Shearim", ar: "مئة شعاريم" },
+  "מולדת": { en: "Homeland", es: "Patria", ar: "الوطن" },
+  "מופשט": { en: "Abstract", es: "Abstracto", ar: "تجريدي" },
+  "מסעותי בעולם": { en: "My Travels", es: "Mis viajes", ar: "رحلاتي حول العالم" },
+  "מעשיות מהתנ\"ך": { en: "Bible Stories", es: "Historias bíblicas", ar: "قصص من الكتاب المقدس" },
+  "נוף": { en: "Landscape", es: "Paisaje", ar: "منظر طبيعي" },
+  "עיר": { en: "City", es: "Ciudad", ar: "مدينة" },
+  "עיר ויהדות": { en: "City & Judaism", es: "Ciudad y judaísmo", ar: "المدينة واليهودية" },
+  "שואה": { en: "Holocaust", es: "Holocausto", ar: "المحرقة" },
+  "שקיעה": { en: "Sunset", es: "Atardecer", ar: "غروب الشمس" },
+};
+
+const CLUSTER_TR = {
+  "שמן": { en: "Oil", es: "Óleo", ar: "زيت" },
+  "אקריליק": { en: "Acrylic", es: "Acrílico", ar: "أكريليك" },
+  "אקוורל / צבעי מים": { en: "Watercolor", es: "Acuarela", ar: "ألوان مائية" },
+  "גואש": { en: "Gouache", es: "Gouache", ar: "غواش" },
+  "פסטל": { en: "Pastel", es: "Pastel", ar: "باستيل" },
+  "עפרון / רישום": { en: "Pencil / Drawing", es: "Lápiz / Dibujo", ar: "رصاص / رسم" },
+  "פחם": { en: "Charcoal", es: "Carboncillo", ar: "فحم" },
+  "גיר / פנדה": { en: "Chalk / Panda", es: "Tiza / Panda", ar: "طباشير / باندا" },
+  "דיו / טוש": { en: "Ink / Marker", es: "Tinta / Rotulador", ar: "حبر / قلم تحديد" },
+  "קולאז' / אפליקציה": { en: "Collage / Appliqué", es: "Collage / Aplicación", ar: "كولاج / تطبيق" },
+  "הדפס / חיתוך עץ": { en: "Print / Woodcut", es: "Grabado / Xilografía", ar: "طباعة / حفر على الخشب" },
+  "טכניקה מעורבת": { en: "Mixed Media", es: "Técnica mixta", ar: "تقنية مختلطة" },
+  "אחר": { en: "Other", es: "Otro", ar: "أخرى" },
+  "לא צוין": { en: "Unspecified", es: "No especificado", ar: "غير محدد" },
+};
+
+const SIZECAT_TR = {
+  "קטן מאוד": { en: "Very Small", es: "Muy pequeño", ar: "صغير جدًا" },
+  "קטן": { en: "Small", es: "Pequeño", ar: "صغير" },
+  "בינוני": { en: "Medium", es: "Mediano", ar: "متوسط" },
+  "גדול": { en: "Large", es: "Grande", ar: "كبير" },
+  "גדול מאוד": { en: "Very Large", es: "Muy grande", ar: "كبير جدًا" },
+  "ענק": { en: "Huge", es: "Enorme", ar: "ضخم" },
+};
+
+function tv(dict, hebrewValue, lang) {
+  if (lang === "he" || !hebrewValue) return hebrewValue;
+  const entry = dict[hebrewValue];
+  return entry && entry[lang] ? entry[lang] : hebrewValue;
+}
+
+
+
 
 // Images already migrated to local static files (no longer depend on
 // Google Drive hotlinking). Grows over time as more are migrated.
 const LOCAL_IMAGES = new Set(["616", "619", "620", "621", "623", "625", "626", "628", "630", "631", "637", "641", "644", "646", "648", "649", "652", "656", "658", "660", "662", "664", "665", "667", "671", "673", "676", "678", "682", "684", "685", "687", "690", "693", "695", "696", "698", "700", "702", "703", "707", "708", "713", "716", "718", "719", "722", "724", "727", "728", "731", "734", "736", "737", "738", "740", "742", "744", "747", "750", "752", "754", "757", "758", "759", "760", "761", "764", "765", "767", "768", "770", "771", "774", "776", "778", "780", "782", "785", "787", "789", "791", "793", "796", "798", "801", "803", "806", "807", "809", "811", "813", "814", "815", "816", "817", "818", "820", "821", "823", "824", "825", "826", "827", "829", "830", "831", "833", "834", "835", "836", "837", "838", "839", "840", "841", "852", "854", "855", "857", "860", "861", "862", "863", "864", "865", "867", "869", "870", "871", "872", "873", "875", "876", "878", "879", "880", "881", "882", "883", "884", "885", "886", "887", "888", "889", "891", "892", "893", "895", "896", "897", "899", "900", "902", "904", "905", "906", "908", "910", "911", "912", "914", "917", "918", "919", "920", "921", "923", "924", "926", "927", "928", "929", "930", "931", "932", "933", "935", "937", "939", "940", "941", "942", "943", "944", "945", "947", "948", "949", "951", "953", "954", "956", "957", "959", "960", "962", "963", "965", "967", "969", "970", "971", "974", "979", "981", "982", "983", "984", "986", "987", "988", "989", "990", "991", "992", "996", "998", "999", "1003", "1004", "1005", "1006", "1007", "1008", "1009", "1010", "1011", "1012", "1013", "1014", "1015", "1016", "1017", "1018", "1019", "1020", "1021", "1022", "1023", "1024", "1025", "1026", "1028", "1029", "1030", "1031", "1032", "1033", "1034", "1035", "1036", "1037", "1038", "1039", "1040", "1041", "1042", "1043", "1044", "1045", "1046", "1047", "1048", "1049", "1050", "1051", "1052", "1053", "1054", "1055", "1056", "1057", "1058", "1059", "1060", "1061", "1062", "1063", "1064", "1065", "1066", "1067", "1071", "1072", "1073", "1074", "1075", "1076", "1077", "1079", "1081", "1082", "1083", "1085", "1087", "1088", "1089", "1090", "1091", "1092", "1093", "1094", "1095", "1096", "1097", "1100", "1101", "1105", "1107", "1109", "1110", "1111", "1112", "1115", "1116", "1117", "1119", "1121", "1122", "1123", "1124", "1125", "1126", "1127", "1128", "1129", "1130", "1131", "1132", "1133", "1134", "1135", "1136", "1137", "1138", "1139", "1140", "1141", "1142", "1143", "1145", "1150", "1152", "1156", "1158", "1160", "1161", "1164", "1166", "1167", "1172", "1173", "1176", "1182", "1184", "1185", "1187", "1189", "1190", "1191", "1194", "1195", "1204", "1205", "1209", "1210", "1211", "1212", "1213", "1215", "1216", "1217", "1218", "1219", "1220", "1221", "1222", "1223", "1226", "1227", "1232", "1234", "1235", "1237", "1241", "1249", "1252", "1253", "1254", "1256", "1257", "1258", "1259", "1260", "1262", "1267", "1269", "1272", "1274", "1294", "1296", "1298", "1299", "1300", "1302", "1303", "1306", "1308", "1309", "1311", "1312", "1313", "1316", "1317", "1318", "1320", "1322", "1323", "1324", "1326", "1328", "1331", "1333", "1334", "1335", "1336", "1338", "1340", "1341", "1342", "1345", "1346", "1354", "1355", "1357", "1358", "1359", "1360", "1361", "1362", "1363", "1364", "1365", "1366", "1367", "1370", "1371", "1372", "1373", "1374", "1375", "1376", "1378", "1379", "1384", "1389", "1392", "1394", "1396", "1397", "1398", "1399", "1400", "1401", "1402", "1405", "1407", "1408", "1409", "1410", "1411", "1412", "1413", "1414", "1415", "1416", "1417", "1418", "1419", "1420", "1421", "1423", "1424", "1425", "1426", "1427", "1428", "1429", "1430", "1431", "1432", "1433", "1434", "1435", "1436", "1437", "1439", "1441", "1442", "1443", "1444", "1445", "1446", "1447", "1448", "1449", "1450", "1451", "1452", "1453", "1455", "1457", "1458", "1459", "1460", "1461", "1462", "1464", "1465", "1466", "1469", "1471", "1473", "1474", "1475", "1476", "1482", "1483", "1484", "1487", "1488", "1489", "1490", "1491", "1492", "1496", "1497", "1498", "1499", "1500", "1501", "1502", "1503", "1504", "1505", "1506", "1507", "1508", "1509", "1510", "1511", "1512", "1513", "1515", "1517", "1523", "1525", "1986", "1991", "1994", "1995", "2003", "2008", "2009", "2012", "2013", "2015", "2018", "2022", "2024", "2026", "2028", "2031", "2032", "2034", "2036", "2038", "2040", "2043", "2045", "2047", "2049", "2053", "2054", "2057", "2060", "2063", "2065", "2067", "2070", "2074", "2077", "2088", "2090", "2093", "2095", "2097", "2101", "2104", "2106", "2108", "2111", "2113", "2119", "2121", "2123", "2126", "2128", "2131", "2133", "2136", "2138", "2140", "2143", "2153", "2155", "2157", "2161", "2163", "2169", "2173", "2176", "2179", "2181", "2183", "2185", "2187", "2189", "2192", "2194", "2196", "2200", "2202", "2203", "2206", "2207", "2210", "2212", "2215", "2217", "2220", "2222", "2225", "2229", "2231", "2234", "2237", "2239", "2241", "2243", "2247", "2249", "2259", "2262", "2266", "2270", "2272", "2275", "2277", "2281", "2285", "2290", "2293", "2296", "2317", "2321", "2323", "2329", "2332", "2336", "2338", "2342", "2346", "2347", "2356", "2359", "2361", "2365", "2379", "2391", "2393", "2406", "2409", "2429", "2436", "2437", "2454", "2457", "2460", "2462", "2465", "2470", "2472", "2475", "2477", "2479", "2481", "2484", "2485", "2486", "2489", "2490", "2491", "2494", "2496", "2504", "2507", "2509", "2513", "2517", "2521", "2523", "2529", "2533", "2535", "2538", "2542", "2543", "2547", "2550", "2557", "2560", "2561", "2563", "2565", "2567", "2571", "2573", "2575", "2577", "2579", "2580", "2583", "2584", "2586", "2588", "2590", "2593", "2597", "2600", "2604", "2606", "2610", "2617", "2618", "2621", "2627", "2629", "2632", "2634", "2635", "2637", "2638", "2640", "2642", "2645", "2647", "2648", "2651", "2653", "2655", "2658", "2661", "2663", "2665", "2666", "2668", "2669", "2670", "2681", "2684", "2689", "2691", "2707", "2710", "2711", "2712", "2713", "2714", "2716", "2718", "2721", "2733", "2735", "2736", "2738", "2740", "2741", "2743", "2744", "2746", "2747", "2748", "2750", "2752", "2755", "2759", "2762", "2766", "2769", "2771", "2774", "2775", "2779", "2781", "2782", "2783", "2784", "2786", "2787", "2789", "2793", "2797", "2799", "2808", "2816", "2840", "2842", "2844", "2847", "2848", "2850", "2855", "2860", "2862", "2863", "2864", "2869", "2872", "2874", "2875", "2877", "2878", "2880", "2882", "2885", "2888", "2890", "2893", "2895", "2896", "2898", "2901", "2908", "2910", "2913", "2915", "2921", "2926", "2927", "2932", "2935", "2936", "2937", "2953", "2954", "2955", "2957", "2959", "2960", "2961", "2963", "2966", "2968", "2970", "2971", "2972", "2973", "2976", "2985", "2994", "2997", "2998", "3000", "3001", "3002", "3003", "3004", "3005", "3007", "3008", "3012", "3014", "3015", "3018", "3019", "3022", "3025", "3029", "3035", "3037", "3039", "3040", "3044", "3046", "3051", "3052", "3057", "3060", "3065", "3066", "3067", "3068", "3070", "3071", "3072", "3073", "3074", "3075", "3076", "3077", "4501", "4502", "4503", "4504", "4505", "4506", "4507", "4508", "4509", "4510", "4511", "4512", "4513", "4514", "4515", "4516", "4518", "4519", "4520", "4521", "4522", "4523", "4524", "4525", "4526", "4527", "4528", "4529", "4530", "4531", "4532", "4533", "4534", "4535", "4536", "4537", "4538", "4539", "4540", "4541", "4542", "4543", "4544", "4545", "4546", "4547", "4548", "4549", "4550", "4551", "4552", "4553", "4554", "4555", "4556", "4557", "4558", "4559", "4560", "4561", "4562", "4563", "4564", "4565", "4566", "4567", "4568", "4569", "4570", "4571", "4572", "4573", "4574", "4575", "4576", "4577", "4578", "4579", "4580", "4581", "4582", "4583", "4585", "4586", "4587", "4588", "4589", "4590", "4591", "4592", "4593", "4594", "4595", "4596", "4597", "4598", "4599", "4600", "4601", "4602", "4603", "4604", "4605", "4606", "4607", "4608", "4609", "4610", "4611", "4612", "4613", "4614", "4615", "4616", "4617", "4618", "4619", "4620", "4621", "4622", "4623", "4624", "4625", "4626", "4627", "4628", "4630", "4631", "4632", "4633", "4634", "4635", "4636", "4637", "5001", "5002", "5003"]);
+
+const DISCOVER_POOL = [{"id": "616", "title": "ללא כותרת", "year": "2011", "subject": "דמויות", "technique": "אקריליק על נייר", "sizeDesc": "בינוני: 30*44 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1K87GWCdijnVSCq8320mzXdGXDju0quE1", "thumbUrl": "https://drive.google.com/thumbnail?id=1K87GWCdijnVSCq8320mzXdGXDju0quE1&sz=w500", "analysis": {"he": "עבודה פיגורטיבית שקטה על נייר, בה הדמויות בנויות במשיכות אקריליק חופשיות ולא מוקפדות, המותירות את קווי המתאר גלויים למחצה. תחושת החטיבה בין הדמות לרקע יוצרת דו-משמעות מכוונת — לא ברור היכן מסתיים הגוף ומתחילה הסביבה. הפלטה המצומצמת מרמזת על עבודה מהירה, אינטואיטיבית, קרובה יותר לרישום מחשבה מאשר לתיאור מדויק.", "en": "A quiet figurative work on paper, where the figures are built from loose, unfussy acrylic strokes that leave the contours half-exposed. The blurred boundary between figure and background creates a deliberate ambiguity — it isn't always clear where the body ends and the surroundings begin. The restrained palette suggests fast, intuitive working, closer to a recorded thought than a precise description.", "es": "Una obra figurativa tranquila sobre papel, donde las figuras se construyen con pinceladas de acrílico sueltas y espontáneas que dejan los contornos medio expuestos. El límite difuminado entre figura y fondo crea una ambigüedad deliberada — no siempre está claro dónde termina el cuerpo y comienza el entorno. La paleta contenida sugiere un trabajo rápido e intuitivo, más cercano a un pensamiento registrado que a una descripción precisa."}}, {"id": "707", "title": "ללא כותרת", "year": "2014", "subject": "טבע דומם", "technique": "שמן על נייר", "sizeDesc": "קטן: 25*39 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1_RTuIzCHRT8r_mQgyIGi6Cf1Dy8HiH3_", "thumbUrl": "https://drive.google.com/thumbnail?id=1_RTuIzCHRT8r_mQgyIGi6Cf1Dy8HiH3_&sz=w500", "analysis": {"he": "טבע דומם קטן וצנוע בשמן, שבו האובייקטים כמעט נבלעים בתוך הרקע החום-אפרפר. גודלו הקומפקטי (25×39 ס\"מ) תורם לאווירה אינטימית, כמעט יומנית — כאילו נצפה בזווית עין תוך כדי מעבר בחדר. יש כאן ותרנות מכוונת על פרטים לטובת מסה ואור.", "en": "A small, modest still life in oil, where the objects are almost swallowed into the grey-brown background. Its compact size (25×39 cm) lends an intimate, almost diaristic atmosphere — as if glimpsed sideways while passing through a room. There's a deliberate sacrifice of detail here in favor of mass and light.", "es": "Una naturaleza muerta pequeña y modesta al óleo, donde los objetos casi se funden con el fondo gris-marrón. Su tamaño compacto (25×39 cm) aporta una atmósfera íntima, casi de diario personal — como si se vislumbrara de reojo al pasar por una habitación. Hay aquí un sacrificio deliberado del detalle en favor de la masa y la luz."}}, {"id": "789", "title": "ללא כותרת", "year": "2015", "subject": "דמויות", "technique": "אקריליק גיר פחם פסטל על נייר", "sizeDesc": "בינוני: 30*40 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1VcMUH1IdENnjPFQPt7wxmrM-XJC3KA38", "thumbUrl": "https://drive.google.com/thumbnail?id=1VcMUH1IdENnjPFQPt7wxmrM-XJC3KA38&sz=w500", "analysis": {"he": "שילוב טכניקות נדיר — אקריליק, גיר, פחם ופסטל יחד — יוצר משטח מרובד ומחוספס, שבו הדמויות נבנות כמעט ארכיאולוגית, שכבה על גבי שכבה. יש בעבודה מתח בין הבנייה הקפדנית של הצורה לבין האקראיות של החומר עצמו, תחושה של חיפוש מתמשך אחר הדמות ולא של הצגתה המוגמרת.", "en": "A rare combination of techniques — acrylic, chalk, charcoal, and pastel together — creates a layered, textured surface where the figures are built up almost archaeologically, layer upon layer. There's tension here between the careful construction of form and the material's own unpredictability, a sense of an ongoing search for the figure rather than its finished presentation.", "es": "Una rara combinación de técnicas — acrílico, tiza, carboncillo y pastel juntos — crea una superficie estratificada y texturizada, donde las figuras se construyen casi arqueológicamente, capa sobre capa. Hay una tensión entre la construcción cuidadosa de la forma y la imprevisibilidad propia del material, una sensación de búsqueda continua de la figura más que de su presentación acabada."}}, {"id": "860", "title": "אבא לא רשם", "year": "2012", "subject": "דמויות", "technique": "גואש על נייר", "sizeDesc": "גדול: 35*50 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1iogGlIrC-HOVQlQN_6IeFw0XTY9Hx_X8", "thumbUrl": "https://drive.google.com/thumbnail?id=1iogGlIrC-HOVQlQN_6IeFw0XTY9Hx_X8&sz=w500", "analysis": {"he": "דמויות בגואש בגודל גדול יחסית (35×50 ס\"מ), מדיום שמעודד החלטיות — אין בגואש מקום רב לתיקון. התוצאה היא קווים בטוחים וצבעוניות שטוחה יותר, קרובה לאיור. יש כאן חן מסוים של פשטות מכוונת, כאילו הדמויות מסופרות ולא רק מצוירות.", "en": "Figures in gouache at a relatively large size (35×50 cm), a medium that rewards decisiveness — gouache leaves little room for correction. The result is confident lines and flatter color, closer to illustration. There's a certain grace of deliberate simplicity here, as if the figures are being narrated rather than merely drawn.", "es": "Figuras en gouache a un tamaño relativamente grande (35×50 cm), un medio que premia la decisión — el gouache deja poco margen para corregir. El resultado son líneas seguras y un color más plano, cercano a la ilustración. Hay aquí cierta gracia de simplicidad deliberada, como si las figuras fueran narradas más que simplemente dibujadas."}}, {"id": "911", "title": "אבא לא רשם", "year": "2000", "subject": "טבע", "technique": "אקריליק ופסטל על נייר", "sizeDesc": "גדול: 55*50 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1pB2HtrOvYDQDcpCreM8kaDSQAf4OrAKn", "thumbUrl": "https://drive.google.com/thumbnail?id=1pB2HtrOvYDQDcpCreM8kaDSQAf4OrAKn&sz=w500", "analysis": {"he": "עבודה גדולה (55×50 ס\"מ) המשלבת אקריליק ופסטל בנושא טבע — שילוב שמאפשר גם משטחים נמרחים וגם קווי פסטל חדים על גביהם. הגודל מזמין חוויה פיזית, כמעט טבעית, של הצפייה, ויש בעבודה תחושת אנרגיה גדלה מן הפינות אל המרכז.", "en": "A large work (55×50 cm) combining acrylic and pastel on a nature theme — a pairing that allows both smeared surfaces and sharp pastel lines drawn over them. The scale invites an almost physical, bodily experience of looking, and there's a sense of energy building from the corners toward the center.", "es": "Una obra grande (55×50 cm) que combina acrílico y pastel sobre un tema de naturaleza — una combinación que permite tanto superficies difuminadas como líneas de pastel nítidas trazadas sobre ellas. La escala invita a una experiencia casi física, corporal, de la observación, y hay una sensación de energía que crece desde las esquinas hacia el centro."}}, {"id": "967", "title": "על פי לוטבינובסקי", "year": "1999", "subject": "מופשט", "technique": "פסטל על נייר", "sizeDesc": "קטן: 25*35 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1V1TvlCnqp0l3SMgYgXufdykQWbU4lB7t", "thumbUrl": "https://drive.google.com/thumbnail?id=1V1TvlCnqp0l3SMgYgXufdykQWbU4lB7t&sz=w500", "analysis": {"he": "עבודה מופשטת בפסטל, המצוינת כעשויה 'על פי לוטבינובסקי' — כלומר במודע כדיאלוג עם מקור השראה חיצוני. הפסטל מאפשר מעברי גוון רכים, וההפשטה כאן פחות אקספרסיבית ויותר מובנית, קרובה לחקירה פורמלית של צורה וגוון מאשר לפרץ רגשי.", "en": "An abstract pastel work, noted as made 'after Lutobinovsky' — a conscious dialogue with an external source of inspiration. Pastel allows for soft tonal transitions, and the abstraction here feels less expressive and more structured, closer to a formal study of shape and hue than an emotional outpouring.", "es": "Una obra abstracta en pastel, señalada como realizada 'según Lutobinovsky' — un diálogo consciente con una fuente externa de inspiración. El pastel permite transiciones tonales suaves, y la abstracción aquí resulta menos expresiva y más estructurada, más cercana a un estudio formal de forma y matiz que a un desahogo emocional."}}, {"id": "1023", "title": "אבא לא רשם", "year": "שנות ה-60 או ה-70", "subject": "דמויות", "technique": "מים ודיו על נייר", "sizeDesc": "גדול: 35*50 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1ikusN6yvDOgWZEyZbv_J8cRX0BYb-T2g", "thumbUrl": "https://drive.google.com/thumbnail?id=1ikusN6yvDOgWZEyZbv_J8cRX0BYb-T2g&sz=w500", "analysis": {"he": "עבודה מוקדמת יחסית (שנות ה-60 או ה-70) בטכניקה נדירה במיוחד באוסף — מים ודיו יחד. הדיו מספק שלד קווי נחרץ, והמים מרככים אותו לכתמים שקופים למחצה. יש כאן תחושת ספונטניות של רישום מהיר, קרוב יותר לתרגיל או לרישום־הכנה מאשר ליצירה סופית ומחושבת.", "en": "A relatively early work (1960s or 70s) in a technique rare within the collection — water and ink together. The ink provides a decisive linear skeleton, and the water softens it into semi-transparent stains. There's a sense of spontaneity here, of a quick sketch, closer to an exercise or a preparatory drawing than a calculated final piece.", "es": "Una obra relativamente temprana (años 60 o 70) en una técnica poco frecuente en la colección — agua y tinta juntas. La tinta aporta un esqueleto lineal decidido, y el agua lo suaviza en manchas semitransparentes. Hay una sensación de espontaneidad aquí, de boceto rápido, más cercano a un ejercicio o dibujo preparatorio que a una pieza final calculada."}}, {"id": "1064", "title": "אבא לא רשם", "year": "שנות ה-60", "subject": "דמויות", "technique": "פחם פסטל גיר על נייר", "sizeDesc": "קטן: 30*21 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1jCxbspsRs0xcH2tUMClLp91EhvIL4JQL", "thumbUrl": "https://drive.google.com/thumbnail?id=1jCxbspsRs0xcH2tUMClLp91EhvIL4JQL&sz=w500", "analysis": {"he": "רישום קטן ואינטימי (30×21 ס\"מ) משנות ה-60, המשלב פחם, פסטל וגיר — שילוב שמעניק לדמויות משטח יבש, גרגירי, כמעט מאובק. יש בעבודה איכות של זיכרון דהוי, כאילו הדמויות עצמן נמצאות בתהליך של הישכחות מהנייר.", "en": "A small, intimate drawing (30×21 cm) from the 1960s, combining charcoal, pastel, and chalk — a mix that gives the figures a dry, grainy, almost dusty surface. There's a quality of faded memory here, as if the figures themselves are in the process of being forgotten off the page.", "es": "Un dibujo pequeño e íntimo (30×21 cm) de los años 60, que combina carboncillo, pastel y tiza — una mezcla que da a las figuras una superficie seca, granulada, casi polvorienta. Hay una cualidad de recuerdo desvanecido aquí, como si las figuras mismas estuvieran en proceso de ser olvidadas sobre el papel."}}, {"id": "1122", "title": "דברים מופלאים", "year": "2008", "subject": "טבע דומם", "technique": "שמן על מזוניט", "sizeDesc": "בינוני: 30*41 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1wxecDwaUnc-Ke2TglJ7DM6THC5Mlzvvr", "thumbUrl": "https://drive.google.com/thumbnail?id=1wxecDwaUnc-Ke2TglJ7DM6THC5Mlzvvr&sz=w500", "analysis": {"he": "טבע דומם בשמן על מזוניט — משטח קשיח שמעודד מריחה חלקה יותר מזו שעל בד או נייר. הכותרת 'דברים מופלאים' מרמזת על יחס כמעט דתי לחפצים היומיומיים, ויש בעבודה תשומת לב סבלנית לאור הנופל על משטחים פשוטים.", "en": "A still life in oil on Masonite — a rigid support that encourages smoother blending than canvas or paper allows. The title, 'Wondrous Things,' hints at an almost devotional attitude toward everyday objects, and there's a patient attentiveness here to light falling across simple surfaces.", "es": "Una naturaleza muerta al óleo sobre Masonite — un soporte rígido que favorece un mezclado más suave que el papel o el lienzo. El título, 'Cosas maravillosas', sugiere una actitud casi devocional hacia los objetos cotidianos, y hay aquí una atención paciente a la luz que cae sobre superficies simples."}}, {"id": "1190", "title": "בפתח", "year": "1992", "subject": "דמויות", "technique": "גואש עפרון על נייר", "sizeDesc": "קטן מאוד: 10*10 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1zX-5nHLUe3SOmVAiJY_x9ju1oWJwgt8m", "thumbUrl": "https://drive.google.com/thumbnail?id=1zX-5nHLUe3SOmVAiJY_x9ju1oWJwgt8m&sz=w500", "analysis": {"he": "עבודה זעירה (10×10 ס\"מ בלבד) בגואש ועפרון, שכותרתה 'בפתח' מרמזת על רגע סף — לא בפנים ולא בחוץ. הגודל הקטן ביותר באוסף מכריח דחיסות מרבית של הקומפוזיציה, וכל קו נושא משקל יחסי גדול יותר.", "en": "A tiny work (just 10×10 cm) in gouache and pencil, whose title, 'At the Threshold,' hints at a liminal moment — neither inside nor outside. The smallest size in the entire collection forces maximum compression of the composition, and every line carries proportionally greater weight.", "es": "Una obra diminuta (apenas 10×10 cm) en gouache y lápiz, cuyo título, 'En el umbral', sugiere un momento liminal — ni dentro ni fuera. El tamaño más pequeño de toda la colección obliga a una compresión máxima de la composición, y cada línea adquiere un peso proporcionalmente mayor."}}, {"id": "1274", "title": "אבא לא רשם", "year": "2014", "subject": "דמויות", "technique": "אפליקציה על פרספקט", "sizeDesc": "בינוני: 40*40 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=133igZk0h8p1jE72vvyGY-tyUiYcAZslu", "thumbUrl": "https://drive.google.com/thumbnail?id=133igZk0h8p1jE72vvyGY-tyUiYcAZslu&sz=w500", "analysis": {"he": "עבודה חריגה בטכניקתה — אפליקציה על פרספקט, כלומר הדבקת חומרים על משטח פלסטי שקוף. הבחירה בחומר תעשייתי במקום נייר או בד יוצרת מתח מכוון בין הדימוי האנושי לבין תמיכה קרה, מלאכותית, וכמעט תעשייתית.", "en": "A work unusual in its technique — appliqué on Perspex, meaning materials adhered to a transparent plastic surface. Choosing an industrial material over paper or canvas creates a deliberate tension between the human image and a cold, artificial, almost industrial support.", "es": "Una obra inusual en su técnica — aplicación sobre Perspex, es decir, materiales adheridos a una superficie plástica transparente. Elegir un material industrial en lugar de papel o lienzo crea una tensión deliberada entre la imagen humana y un soporte frío, artificial, casi industrial."}}, {"id": "1396", "title": "ללא כותרת", "year": "2012", "subject": "לא צוין", "technique": "אקוורל ושמן על נייר", "sizeDesc": "גדול מאוד: 50*70 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1Pqs-pzmStFsAEBZJnAvQ2wA_YpFo_a-r", "thumbUrl": "https://drive.google.com/thumbnail?id=1Pqs-pzmStFsAEBZJnAvQ2wA_YpFo_a-r&sz=w500", "analysis": {"he": "עבודה גדולה מאוד (50×70 ס\"מ) המשלבת אקוורל ושמן — שילוב טכני נועז, שכן שני המדיומים דורשים בדרך כלל תהליכי עבודה שונים לחלוטין. יש כאן כנראה שכבת בסיס שקופה של אקוורל ועליה בנייה גופנית יותר בשמן, תהליך שיוצר עומק אטמוספרי נדיר בעבודות הנייר של האוסף.", "en": "A very large work (50×70 cm) combining watercolor and oil — a bold technical pairing, since the two media typically demand entirely different working processes. There's likely a transparent watercolor underlayer here with more solid oil built up over it, a process that creates a rare atmospheric depth among the collection's works on paper.", "es": "Una obra muy grande (50×70 cm) que combina acuarela y óleo — una combinación técnica audaz, ya que ambos medios suelen exigir procesos de trabajo completamente distintos. Es probable que haya aquí una capa base transparente de acuarela sobre la que se construye algo más sólido en óleo, un proceso que crea una profundidad atmosférica poco habitual entre las obras sobre papel de la colección."}}, {"id": "1442", "title": "ללא כותרת", "year": "1995", "subject": "דמויות", "technique": "שמן על נייר", "sizeDesc": "בינוני: 32*42 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1bjduB3E3Ce7YeWrsbsjqmMwr8FiKmgDX", "thumbUrl": "https://drive.google.com/thumbnail?id=1bjduB3E3Ce7YeWrsbsjqmMwr8FiKmgDX&sz=w500", "analysis": {"he": "עבודת שמן על נייר מאמצע שנות ה-90, בגודל בינוני נוח לצפייה. השילוב של שמן על נייר (ולא בד) מעניק למשטח ספיגות מסוימת, גבולות רכים יותר בין אזורי הצבע, תחושה פחות 'גמורה' ופורמלית מציור שמן קלאסי על בד.", "en": "An oil-on-paper work from the mid-1990s, at a comfortable medium size for viewing. Using oil on paper rather than canvas lends the surface a certain absorbency, softer boundaries between color areas, a feeling less 'finished' and formal than a classic oil painting on canvas.", "es": "Una obra al óleo sobre papel de mediados de los años 90, de un tamaño mediano cómodo para la observación. Usar óleo sobre papel en lugar de lienzo confiere a la superficie cierta absorbencia, límites más suaves entre las áreas de color, una sensación menos 'terminada' y formal que una pintura al óleo clásica sobre lienzo."}}, {"id": "1499", "title": "ללא כותרת", "year": "1965", "subject": "דמויות", "technique": "עפרון על נייר", "sizeDesc": "קטן: 34*25 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1ogugZhdOsI78nHBOSH7avwZfoRoLWILk", "thumbUrl": "https://drive.google.com/thumbnail?id=1ogugZhdOsI78nHBOSH7avwZfoRoLWILk&sz=w500", "analysis": {"he": "רישום עפרון מ-1965 — מהעבודות המוקדמות ביותר באוסף. קו העיפרון היחיד, ללא צבע, חושף את מבנה החשיבה הבסיסי ביותר של האמן: תצפית ישירה, קו לקו, ללא רשת בטחון של גוון. יש כאן צניעות טכנית שמתגלה כביטחון אמנותי.", "en": "A pencil drawing from 1965 — among the earliest works in the collection. The single, colorless pencil line exposes the artist's most basic structure of thinking: direct observation, line by line, with no safety net of tone. There's a technical modesty here that reveals itself as artistic confidence.", "es": "Un dibujo a lápiz de 1965 — una de las obras más tempranas de la colección. La línea de lápiz, única y sin color, revela la estructura de pensamiento más básica del artista: observación directa, línea a línea, sin la red de seguridad del tono. Hay aquí una modestia técnica que se revela como confianza artística."}}, {"id": "2043", "title": "לא נמצא תיעוד לכותרת היצירה", "year": "2014", "subject": "טבע דומם", "technique": "עפרון פחם שמן על נייר", "sizeDesc": "גדול: 46*61 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1Ga01-oJrnxi7jAnkNUZWoF0_tAyGnaXe", "thumbUrl": "https://drive.google.com/thumbnail?id=1Ga01-oJrnxi7jAnkNUZWoF0_tAyGnaXe&sz=w500", "analysis": {"he": "עבודה גדולה המשלבת עפרון, פחם ושמן יחד — שכבות של קו יבש מתחת לצבע שמן, המותירות סימני בנייה גלויים. הכותרת חסרה (\"לא נמצא תיעוד\"), מה שמותיר את הפרשנות פתוחה במיוחד: זהו טבע דומם שבו תהליך היצירה עצמו כמעט גלוי כמו האובייקטים המצוירים.", "en": "A large work combining pencil, charcoal, and oil together — layers of dry line beneath oil paint, leaving visible marks of construction. The title is missing ('no documentation found'), which leaves the interpretation especially open: this is a still life in which the process of creation itself is almost as visible as the objects depicted.", "es": "Una obra grande que combina lápiz, carboncillo y óleo juntos — capas de línea seca bajo la pintura al óleo, que dejan marcas visibles de construcción. Falta el título ('no se encontró documentación'), lo que deja la interpretación especialmente abierta: es una naturaleza muerta en la que el propio proceso de creación resulta casi tan visible como los objetos representados."}}, {"id": "2163", "title": "נוף", "year": "2002", "subject": "נוף", "technique": "אקוורל עפרון על נייר", "sizeDesc": "בינוני: 36*45 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1vPe7yjahJe9V_gmWLPFYEMWtFKZ8z_TN", "thumbUrl": "https://drive.google.com/thumbnail?id=1vPe7yjahJe9V_gmWLPFYEMWtFKZ8z_TN&sz=w500", "analysis": {"he": "נוף באקוורל ועפרון, מדיום קלאסי לתיאורי חוץ. השקיפות של האקוורל מתאימה במיוחד לנופים — מאפשרת לאור להיראות \"בוקע\" מבעד לצבע ולא רק מונח עליו. קו העפרון מתחתיו מספק את השלד המבני שהאקוורל לבדו לא תמיד מצליח להעניק.", "en": "A landscape in watercolor and pencil, a classic medium for outdoor description. Watercolor's transparency suits landscapes particularly well — it lets light seem to 'break through' the color rather than simply sit on top of it. The pencil line beneath provides the structural skeleton that watercolor alone doesn't always supply.", "es": "Un paisaje en acuarela y lápiz, un medio clásico para la descripción al aire libre. La transparencia de la acuarela se adapta especialmente bien a los paisajes — permite que la luz parezca 'atravesar' el color en lugar de simplemente posarse sobre él. La línea de lápiz debajo aporta el esqueleto estructural que la acuarela sola no siempre ofrece."}}, {"id": "2277", "title": "לא נמצא תיעוד לכותרת היצירה", "year": "2015", "subject": "דמויות", "technique": "שמן על נייר פחם", "sizeDesc": "ענק: 70*100 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1rGnhgHRUNGygp1ye1XEytdKYuf0nJJ6S", "thumbUrl": "https://drive.google.com/thumbnail?id=1rGnhgHRUNGygp1ye1XEytdKYuf0nJJ6S&sz=w500", "analysis": {"he": "עבודה ענקית (70×100 ס\"מ) — מהגדולות באוסף — המשלבת שמן ופחם על נייר. הגודל הבלתי רגיל לעבודת נייר מרמז על שאיפה חריגה, כמעט מונומנטלית, לעבודה שבדרך כלל נעשית בקנה מידה אינטימי יותר. הפחם מוסיף למשטח השמני איכות גרפית, כמעט דרמטית.", "en": "A huge work (70×100 cm) — among the largest in the collection — combining oil and charcoal on paper. The unusual scale for a paper work suggests an exceptional, almost monumental ambition for a piece that would typically be made at a more intimate scale. The charcoal adds a graphic, almost dramatic quality to the oiled surface.", "es": "Una obra enorme (70×100 cm) — entre las más grandes de la colección — que combina óleo y carboncillo sobre papel. La escala inusual para una obra en papel sugiere una ambición excepcional, casi monumental, para una pieza que normalmente se realizaría en una escala más íntima. El carboncillo añade una cualidad gráfica, casi dramática, a la superficie oleosa."}}, {"id": "2484", "title": "מיטולוגיה", "year": "2015", "subject": "מופשט", "technique": "גואש + פחם על נייר", "sizeDesc": "גדול: 48*69 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1HPcZ5SySv_pqelCe6dWZLgewgEPESiUP", "thumbUrl": "https://drive.google.com/thumbnail?id=1HPcZ5SySv_pqelCe6dWZLgewgEPESiUP&sz=w500", "analysis": {"he": "עבודה מופשטת ('מיטולוגיה') המשלבת גואש ופחם — הגואש מספק אזורי צבע אטומים ושטוחים, והפחם מוסיף קווי מתאר גרפיים חדים. הכותרת מרמזת על שאיפה נרטיבית מעבר להפשטה הצורנית גרידא, כאילו הצורות מייצגות דמויות או אירועים מעולם סיפורי פנימי.", "en": "An abstract work ('Mythology') combining gouache and charcoal — the gouache provides opaque, flat color areas, and the charcoal adds sharp graphic outlines. The title hints at a narrative ambition beyond pure formal abstraction, as if the shapes represent figures or events from an inner storied world.", "es": "Una obra abstracta ('Mitología') que combina gouache y carboncillo — el gouache aporta zonas de color opacas y planas, y el carboncillo añade contornos gráficos nítidos. El título sugiere una ambición narrativa más allá de la abstracción puramente formal, como si las formas representaran figuras o sucesos de un mundo narrativo interior."}}, {"id": "2593", "title": "דומם", "year": "2005", "subject": "טבע דומם", "technique": "אקריליק ופסטל על נייר", "sizeDesc": "גדול מאוד: 50*70 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1v1r5FulqULt6l5Y4aB-lpxwj43H1cc8y", "thumbUrl": "https://drive.google.com/thumbnail?id=1v1r5FulqULt6l5Y4aB-lpxwj43H1cc8y&sz=w500", "analysis": {"he": "טבע דומם גדול מאוד (50×70 ס\"מ) בשם 'דומם' — כותרת ישירה ולא מתחמקת. השילוב של אקריליק ופסטל יוצר ניגוד בין משטחים אטומים לקווי גוון עדינים יותר, וההיקף הגדול הופך אובייקטים יומיומיים לנוכחות כמעט מונומנטלית.", "en": "A very large still life (50×70 cm) titled, simply and directly, 'Still Life' — no evasion in the naming. The combination of acrylic and pastel creates a contrast between opaque surfaces and finer tonal lines, and the large scale turns everyday objects into an almost monumental presence.", "es": "Una naturaleza muerta muy grande (50×70 cm) titulada, simple y directamente, 'Naturaleza muerta' — sin evasivas en el nombre. La combinación de acrílico y pastel crea un contraste entre superficies opacas y líneas tonales más finas, y la gran escala convierte objetos cotidianos en una presencia casi monumental."}}, {"id": "2714", "title": "בואכם לשלום / קידישנו (אִמי)", "year": "1972", "subject": "יהדות", "technique": "שמן על בד", "sizeDesc": "גדול מאוד: 80*61 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1R1YNWES1tqvqB5mRbok2QnvhzHSu7Gai", "thumbUrl": "https://drive.google.com/thumbnail?id=1R1YNWES1tqvqB5mRbok2QnvhzHSu7Gai&sz=w500", "analysis": {"he": "עבודה בעלת נגיעה אישית ומשפחתית עמוקה — 'בואכם לשלום / קידישנו (אמי)' — שמן על בד בגודל גדול מאוד. השילוב של שמן ובד, המדיום הקלאסי והמסורתי ביותר באוסף, נבחר כאן במודע לעבודה בעלת משמעות טקסית ומשפחתית, מה שמעניק לה משקל רגשי וחומרי כאחד.", "en": "A work with a deep personal and family resonance — 'Come in Peace / Our Kiddush (My Mother)' — oil on canvas at a very large size. The pairing of oil and canvas, the most classic and traditional medium in the collection, is chosen here deliberately for a work of ceremonial and familial meaning, giving it both emotional and material weight.", "es": "Una obra de profunda resonancia personal y familiar — 'Vengan en paz / Nuestro Kidush (mi madre)' — óleo sobre lienzo de gran tamaño. La combinación de óleo y lienzo, el medio más clásico y tradicional de la colección, se elige aquí deliberadamente para una obra de significado ceremonial y familiar, dándole un peso tanto emocional como material."}}, {"id": "2844", "title": "לא נמצא תיעוד לכותרת היצירה", "year": "2011", "subject": "דמויות", "technique": "שמן על בד", "sizeDesc": "ענק: 100*95 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1SDIgYg9J0IepaIlP2xyJhZBy2nzx98QO", "thumbUrl": "https://drive.google.com/thumbnail?id=1SDIgYg9J0IepaIlP2xyJhZBy2nzx98QO&sz=w500", "analysis": {"he": "עבודה ענקית ביותר (100×95 ס\"מ) — כנראה הגדולה באוסף — בשמן על בד. קנה המידה העצום דורש התמודדות פיזית שונה לחלוטין מציור שולחני; הצופה עומד מול העבודה ולא מביט בה מלמעלה. יש כאן שאפתנות שמנוגדת לכותרות הצנועות והחסרות של עבודות רבות אחרות באוסף.", "en": "An extremely large work (100×95 cm) — likely the largest in the collection — in oil on canvas. The immense scale demands an entirely different physical encounter than tabletop painting; the viewer stands before the work rather than looking down at it. There's an ambition here that contrasts with the modest, often absent titles of many other works in the collection.", "es": "Una obra extremadamente grande (100×95 cm) — probablemente la mayor de la colección — al óleo sobre lienzo. La escala inmensa exige un encuentro físico completamente distinto al de la pintura de sobremesa; el espectador se sitúa frente a la obra en lugar de mirarla desde arriba. Hay aquí una ambición que contrasta con los títulos modestos, a menudo ausentes, de muchas otras obras de la colección."}}, {"id": "2959", "title": "לא נמצא תיעוד לכותרת היצירה", "year": "2012", "subject": "נוף", "technique": "גואש + פחם על נייר", "sizeDesc": "גדול: 40*50 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1GHy5wFKC-D3yAunhxQ2cHyYjki4KPM0s", "thumbUrl": "https://drive.google.com/thumbnail?id=1GHy5wFKC-D3yAunhxQ2cHyYjki4KPM0s&sz=w500", "analysis": {"he": "נוף בגואש ופחם, שילוב שמעניק אטימות צבעונית לצד קווי מתאר גרפיים נוקבים. גודל גדול יחסית (40×50 ס\"מ) לעבודת נוף על נייר, מרמז על התייחסות רצינית ומחושבת לנושא, לא סקיצה חטופה.", "en": "A landscape in gouache and charcoal, a pairing that lends color opacity alongside incisive graphic outlines. A relatively large size (40×50 cm) for a paper landscape suggests a serious, considered treatment of the subject rather than a hurried sketch.", "es": "Un paisaje en gouache y carboncillo, una combinación que aporta opacidad de color junto con contornos gráficos incisivos. Un tamaño relativamente grande (40×50 cm) para un paisaje sobre papel sugiere un tratamiento serio y meditado del tema, no un boceto apresurado."}}, {"id": "3060", "title": "לא נמצא תיעוד לכותרת היצירה", "year": "2010", "subject": "דמויות", "technique": "שמן על בד", "sizeDesc": "בינוני: 34.5*45 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=12BsNJGkGVXWgJRm2BolhuBkjlbxdgFFm", "thumbUrl": "https://drive.google.com/thumbnail?id=12BsNJGkGVXWgJRm2BolhuBkjlbxdgFFm&sz=w500", "analysis": {"he": "דמות בשמן על בד, גודל בינוני נוח. הבחירה בבד (ולא נייר) לעבודה בגודל זה מרמזת על התייחסות רצינית יותר, כמעט 'רשמית', לעבודה — בד היה בדרך כלל שמור לעבודות שהאמן ראה בהן חשיבות מיוחדת.", "en": "A figure in oil on canvas, a comfortable medium size. Choosing canvas over paper for a work this size suggests a more serious, almost 'official' treatment — canvas was typically reserved for works the artist regarded as especially significant.", "es": "Una figura al óleo sobre lienzo, de un tamaño mediano cómodo. Elegir lienzo en lugar de papel para una obra de este tamaño sugiere un tratamiento más serio, casi 'oficial' — el lienzo solía reservarse para las obras que el artista consideraba especialmente significativas."}}, {"id": "4530", "title": "שער החצר", "year": "1994", "subject": "לא צוין", "technique": "שמן על נייר", "sizeDesc": "גדול: 45*49 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1ApQ9A0hnKI9g1lFbo3uDNgLVkM9YyA3z", "thumbUrl": "https://drive.google.com/thumbnail?id=1ApQ9A0hnKI9g1lFbo3uDNgLVkM9YyA3z&sz=w500", "analysis": {"he": "נוף אדריכלי-אורבני ('שער החצר') בשמן על נייר. הכותרת הספציפית — נדירה יחסית באוסף — מרמזת על מקום אמיתי, מוכר, ולא על נוף כללי או מומצא. יש בכך רמז לזיכרון אישי, מקום שהאמן חזר אליו שוב ושוב במחשבתו.", "en": "An architectural-urban landscape ('The Courtyard Gate') in oil on paper. The specific title — relatively rare in the collection — points to a real, recognizable place rather than a generic or invented landscape, hinting at a personal memory, a place the artist returned to again and again in his mind.", "es": "Un paisaje urbano-arquitectónico ('La puerta del patio') al óleo sobre papel. El título específico — relativamente raro en la colección — apunta a un lugar real y reconocible en lugar de un paisaje genérico o inventado, sugiriendo un recuerdo personal, un lugar al que el artista regresaba una y otra vez en su mente."}}, {"id": "4571", "title": "דימויים", "year": "2009", "subject": "לא צוין", "technique": "אקריליק ושמן על נייר,", "sizeDesc": "קטן: 22*34 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=13I8sRlTd8V85jDalTZB49EUSUBDn0Dyt", "thumbUrl": "https://drive.google.com/thumbnail?id=13I8sRlTd8V85jDalTZB49EUSUBDn0Dyt&sz=w500", "analysis": {"he": "עבודה קטנה בשם 'דימויים', המשלבת אקריליק ושמן — שילוב שמעניק למשטח גם אזורים דקים ושקופים למחצה וגם משיכות סמיכות יותר. הכותרת הרב-משמעית מרמזת על עבודה אסוציאטיבית, פחות תיאורית ויותר חופשית בקישור בין צורה לצורה.", "en": "A small work titled 'Images,' combining acrylic and oil — a pairing that gives the surface both thin, semi-transparent areas and thicker strokes. The multivalent title hints at an associative work, less descriptive and more free in linking one form to another.", "es": "Una obra pequeña titulada 'Imágenes', que combina acrílico y óleo — una combinación que da a la superficie tanto zonas finas y semitransparentes como pinceladas más densas. El título polisémico sugiere una obra asociativa, menos descriptiva y más libre en la vinculación de una forma con otra."}}, {"id": "4620", "title": "הדלקת נרות לכבוד רחלי", "year": "2010", "subject": "לא צוין", "technique": "שמן על קרטון", "sizeDesc": "קטן מאוד: 20*15 ס''מ", "imageUrl": "https://drive.google.com/uc?export=view&id=1wk7t1s89rP2s_9jkf_nEEfE3NEuvrW-6", "thumbUrl": "https://drive.google.com/thumbnail?id=1wk7t1s89rP2s_9jkf_nEEfE3NEuvrW-6&sz=w500", "analysis": {"he": "עבודה זעירה וטקסית — 'הדלקת נרות לכבוד רחלי' — שמן על קרטון, חומר תמיכה זול ולא-שגרתי. הבחירה בקרטון על פני נייר או בד עשויה לרמז על ספונטניות, על יצירה שנעשתה מתוך דחף רגעי לתעד רגע משפחתי ולא כחלק מתכנון מוקדם.", "en": "A tiny, ceremonial work — 'Lighting Candles for Racheli' — oil on cardboard, a cheap and unconventional support. Choosing cardboard over paper or canvas may hint at spontaneity, a piece made from a momentary urge to document a family moment rather than as part of advance planning.", "es": "Una obra diminuta y ceremonial — 'Encendiendo velas en honor a Racheli' — óleo sobre cartón, un soporte barato y poco convencional. Elegir cartón en lugar de papel o lienzo puede sugerir espontaneidad, una pieza hecha por un impulso momentáneo de documentar un instante familiar más que como parte de una planificación previa."}}];
 
 function localImageUrl(id) {
   return LOCAL_IMAGES.has(id) ? `/images/${id}.jpg` : null;
@@ -69,6 +250,7 @@ function ArtImage({ sources, alt, natural }) {
    MUSEUM PLACARD
 --------------------------------------------------------- */
 function Placard({ art, onClick }) {
+  const { t, tv, displayFont, bodyFont } = useLang();
   return (
     <div style={{ cursor: "pointer" }} onClick={onClick}>
       <ArtImage sources={[localImageUrl(art.id), art.thumbUrl, art.imageUrl]} alt={art.title} />
@@ -84,12 +266,12 @@ function Placard({ art, onClick }) {
             textAlign: "right",
           }}
         >
-          מס' {art.id} — {art.year || "תאריך לא ידוע"}
-          {!art.hasVerifiedImage && <span style={{ color: "#8B4A3D" }}> · לא נמצאה תמונה בתיקייה</span>}
+          {t("catalogNo")} {art.id} — {art.year || t("unknownDate")}
+          {!art.hasVerifiedImage && <span style={{ color: "#8B4A3D" }}> · {t("imageMissing")}</span>}
         </div>
         <div
           style={{
-            fontFamily: "'Frank Ruhl Libre', serif",
+            fontFamily: displayFont,
             fontSize: 15,
             color: "#221D17",
             lineHeight: 1.35,
@@ -99,13 +281,13 @@ function Placard({ art, onClick }) {
         </div>
         <div
           style={{
-            fontFamily: "'Assistant', sans-serif",
+            fontFamily: bodyFont,
             fontSize: 12,
             color: "#6B5B4F",
             marginTop: 3,
           }}
         >
-          {art.subject} · {art.technique}
+          {tv(SUBJECT_TR, art.subject)} · {art.technique}
         </div>
       </div>
     </div>
@@ -133,6 +315,7 @@ function bigImageUrls(art) {
 }
 
 function Lightbox({ art, onClose }) {
+  const { t, tv, displayFont, bodyFont } = useLang();
   if (!art) return null;
   return (
     <div
@@ -163,16 +346,16 @@ function Lightbox({ art, onClose }) {
         <ArtImage key={art.id} sources={[localImageUrl(art.id), ...bigImageUrls(art)]} alt={art.title} natural />
         <div style={{ padding: 24 }}>
           <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11, color: "#A66B33", direction: "ltr", textAlign: "right", marginBottom: 6 }}>
-            מס' {art.id}
+            {t("catalogNo")} {art.id}
           </div>
-          <div style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: 24, color: "#221D17", marginBottom: 10 }}>
+          <div style={{ fontFamily: displayFont, fontSize: 24, color: "#221D17", marginBottom: 10 }}>
             {art.title}
           </div>
-          <div style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, color: "#3E3A33", lineHeight: 1.9 }}>
-            <div>שנה: {art.year || "לא ידוע"}</div>
-            <div>נושא: {art.subject}</div>
-            <div>טכניקה: {art.technique}</div>
-            <div>מידות: {art.sizeDesc}</div>
+          <div style={{ fontFamily: bodyFont, fontSize: 14, color: "#3E3A33", lineHeight: 1.9 }}>
+            <div>{t("fieldYear")}: {art.year || t("unknown")}</div>
+            <div>{t("fieldSubject")}: {tv(SUBJECT_TR, art.subject)}</div>
+            <div>{t("fieldTechnique")}: {art.technique}</div>
+            <div>{t("fieldSize")}: {art.sizeDesc}</div>
           </div>
         </div>
         <button
@@ -202,20 +385,22 @@ function Lightbox({ art, onClose }) {
 --------------------------------------------------------- */
 function Nav({ page, setPage }) {
   const [open, setOpen] = useState(false);
+  const { t, displayFont } = useLang();
   const links = [
-    ["home", "בית"],
-    ["gallery", "גלריה מלאה"],
-    ["selected", "יצירות נבחרות"],
-    ["contact", "צרו קשר"],
+    ["home", t("navHome")],
+    ["gallery", t("navGallery")],
+    ["selected", t("navSelected")],
+    ["discover", t("navDiscover")],
+    ["contact", t("navContact")],
   ];
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 20, background: "#EFE9DDf2", backdropFilter: "blur(6px)", borderBottom: "1px solid #C9BFA9" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button
           onClick={() => setPage("home")}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Frank Ruhl Libre', serif", fontSize: 21, fontWeight: 700, color: "#221D17" }}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: displayFont, fontSize: 21, fontWeight: 700, color: "#221D17" }}
         >
-          אריה ברמץ
+          {t("siteName")}
         </button>
         <div style={{ display: "flex", gap: 26 }} className="nav-links">
           {links.map(([key, label]) => (
@@ -264,13 +449,14 @@ function Nav({ page, setPage }) {
    HOME
 --------------------------------------------------------- */
 function Home({ setPage }) {
+  const { t, displayFont, bodyFont, lang } = useLang();
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "56px 24px 100px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: 56, alignItems: "center" }} className="home-grid">
         <div style={{ textAlign: "center" }}>
           <img
             src={PORTRAIT_URL}
-            alt="אריה ברמץ"
+            alt={t("siteName")}
             style={{ width: "100%", maxWidth: 280, borderRadius: 3, border: "1px solid #C9BFA9", margin: "0 auto" }}
           />
         </div>
@@ -280,58 +466,34 @@ function Home({ setPage }) {
             <span>—</span>
             <span>2016</span>
           </div>
-          <h1 style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: "clamp(38px, 5vw, 56px)", fontWeight: 700, color: "#221D17", margin: "0 0 20px", lineHeight: 1.1 }}>
-            אריה ברמץ
+          <h1 style={{ fontFamily: displayFont, fontSize: "clamp(38px, 5vw, 56px)", fontWeight: 700, color: "#221D17", margin: "0 0 20px", lineHeight: 1.1 }}>
+            {t("siteName")}
           </h1>
-          <p style={{ fontFamily: "'Assistant', sans-serif", fontSize: 17, color: "#3E3A33", lineHeight: 1.8, marginBottom: 12 }}>
-            שמן על בד — ארכיון יצירתו של האמן
+          <p style={{ fontFamily: bodyFont, fontSize: 17, color: "#3E3A33", lineHeight: 1.8, marginBottom: 12 }}>
+            {t("heroTagline")}
           </p>
           <div style={{ display: "flex", gap: 14 }}>
-            <button onClick={() => setPage("gallery")} style={btnPrimary}>לגלריה המלאה</button>
-            <button onClick={() => setPage("selected")} style={btnGhost}>יצירות נבחרות</button>
+            <button onClick={() => setPage("gallery")} style={btnPrimary}>{t("heroGalleryBtn")}</button>
+            <button onClick={() => setPage("selected")} style={btnGhost}>{t("heroSelectedBtn")}</button>
           </div>
         </div>
       </div>
 
       <div style={{ margin: "64px 0", borderTop: "1px solid #C9BFA9", borderBottom: "1px solid #C9BFA9", padding: "32px 0" }}>
-        <p style={{ fontFamily: "'Frank Ruhl Libre', serif", fontStyle: "italic", fontSize: 19, lineHeight: 1.85, color: "#221D17", textAlign: "center", maxWidth: 720, margin: "0 auto" }}>
-          "אני זוכר כי בגיל 8, בשנת 1937 בערך, אבי הביא לביתנו מספר דפי נייר, לבנים ומשובחים, והניחם על שולחן הבית.
-          איכות ולובן הנייר בהק בבהירות, וזרח לתוך עיני ועורר בי התרגשות מרובה שריכזה את כל תשומת לבי וריתקה אותי אליהם.
-          לא זזתי ממקומי, רכנתי כל גופי וראשי עליהם, ולא יכולתי משום מה להתנתק. אינני זוכר ויודע כיצד נפל פתאום לידי עיפרון,
-          העיפרון משך ודחף את ידי והחילותי לשרבט. והנה כי כן הנייר לבן אחד רדף את השני ונתמלא בהם נופים, אנשים, עצים,
-          בתים גגות אדומים, דמויות, עגלות חמורים – כנראה כל מה שספגו עיני וזכרוני. ומאז אני מצייר."
+        <p style={{ fontFamily: displayFont, fontStyle: "italic", fontSize: 19, lineHeight: 1.85, color: "#221D17", textAlign: "center", maxWidth: 720, margin: "0 auto" }}>
+          "{t("quote")}"
         </p>
       </div>
 
-      <div style={{ fontFamily: "'Assistant', sans-serif", fontSize: 16, lineHeight: 2, color: "#3E3A33", maxWidth: 760, margin: "0 auto" }}>
-        <h2 style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: 24, fontWeight: 700, color: "#221D17", marginBottom: 18 }}>
-          אני מאת עצמי
+      <div style={{ fontFamily: bodyFont, fontSize: 16, lineHeight: 2, color: "#3E3A33", maxWidth: 760, margin: "0 auto" }}>
+        <h2 style={{ fontFamily: displayFont, fontSize: 24, fontWeight: 700, color: "#221D17", marginBottom: 18 }}>
+          {t("bioTitle")}
         </h2>
-        <p style={{ marginBottom: 18 }}>
-          אריה ברמץ (1929—2016), יליד ירושלים, גילה את כישרונו האמנותי ומשיכתו לציור בגיל צעיר מאד. הוא לא זכה לחינוך
-          אמנותי מסודר ורכש את ידיעותיו על אמנות הציור מהתבוננות ביצירותיהם של אמנים דגולים בכלל ושל אמנים ישראלים
-          ידועים בפרט. בעודו נער, רשם רישומים, תוך התבוננות בתצלומים ובדמויות שסובבו אותו בשכונה הירושלמית בה
-          התגורר עם הוריו.
-        </p>
-        <p style={{ marginBottom: 18 }}>
-          אריה ברמץ התחנך במסגרות דתיות ציוניות ששילבו לימודי קודש עם לימודים כלליים. בצעירותו היה פעיל בתנועת הנוער
-          "בני עקיבא" שם, בנוסף להדרכה, התבלט בכישוריו האמנותיים והיה אחראי על קישוט אירועים, עיצוב כרזות ועוד.
-        </p>
-        <p style={{ marginBottom: 18 }}>
-          בבגרותו עבד במחלקת החינוך בעיריית ירושלים ומילא בה תפקידים מרכזיים רבים הקשורים לחינוך ולרווחה. במקביל
-          הצליח להביא לידי ביטוי את הצד האמנותי שבו על ידי ניהול, ארגון והפקת אירועי תרבות שיזמה העירייה, באיור
-          ובציור לאירועים אלו ובעיצוב וציור כרזות ופרסומים. במסגרת תפקידו במחלקת החינוך הוא נפגש עם סופרים, אמנים
-          ואנשי רוח. עם רבים מהם, ביניהם ש"י עגנון, קשר קשרי ידידות אמיצים שנמשכו לאורך שנים.
-        </p>
-        <p style={{ marginBottom: 18 }}>
-          עם התפתחותו האמנותית, הסגנון הפיגורטיבי של רישומיו וציוריו שינה כיוון למופשט ולסמלי, בהשראת הרוח החדשנית
-          ופורצת הדרך של אמני "אופקים חדשים". עם זאת, מעולם לא זנח ציור דמויות.
-        </p>
-        <p>
-          מורשתו האמנותית כוללת מעל אלף ציורים, רישומים וקולאז'ים. התבוננות ביצירותיו מגלה את אהדתו למרק שאגאל,
-          לנפתלי בזם ולמרדכי ארדון. בהמשך למורשתם, ציוריו של ברמץ מאופיינים במרכיבים סוריאליסטיים וסמליים השואבים
-          הן מן האמנות המערבית והן מן העולם היהודי.
-        </p>
+        {UI.bio[lang].map((paragraph, i) => (
+          <p key={i} style={{ marginBottom: i < UI.bio[lang].length - 1 ? 18 : 0 }}>
+            {paragraph}
+          </p>
+        ))}
       </div>
 
       <style>{`@media (max-width: 800px) { .home-grid { grid-template-columns: 1fr !important; } }`}</style>
@@ -381,9 +543,11 @@ function sortMixed(values) {
 /* ---------------------------------------------------------
    MULTI-SELECT DROPDOWN (checkbox list)
 --------------------------------------------------------- */
-function MultiSelectFilter({ label, options, selected, setSelected }) {
+function MultiSelectFilter({ label, options, selected, setSelected, labelFor }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const { t, bodyFont } = useLang();
+  const displayLabel = labelFor || ((v) => v);
 
   useEffect(() => {
     function handleClick(e) {
@@ -406,7 +570,7 @@ function MultiSelectFilter({ label, options, selected, setSelected }) {
   };
 
   const buttonStyle = {
-    fontFamily: "'Assistant', sans-serif",
+    fontFamily: bodyFont,
     fontSize: 13,
     padding: "9px 10px",
     background: "#F7F3EA",
@@ -455,13 +619,13 @@ function MultiSelectFilter({ label, options, selected, setSelected }) {
                 border: "none",
                 borderBottom: "1px solid #C9BFA9",
                 padding: "8px 10px",
-                fontFamily: "'Assistant', sans-serif",
+                fontFamily: bodyFont,
                 fontSize: 12,
                 color: "#8B4A3D",
                 cursor: "pointer",
               }}
             >
-              נקה בחירה
+              {t("clearSelection")}
             </button>
           )}
           {options.map((opt) => (
@@ -472,19 +636,19 @@ function MultiSelectFilter({ label, options, selected, setSelected }) {
                 alignItems: "center",
                 gap: 8,
                 padding: "8px 10px",
-                fontFamily: "'Assistant', sans-serif",
+                fontFamily: bodyFont,
                 fontSize: 13,
                 color: "#221D17",
                 cursor: "pointer",
               }}
             >
               <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggle(opt)} />
-              {opt}
+              {displayLabel(opt)}
             </label>
           ))}
           {options.length === 0 && (
-            <div style={{ padding: "10px", fontFamily: "'Assistant', sans-serif", fontSize: 12, color: "#8A7E6C" }}>
-              אין אפשרויות תואמות
+            <div style={{ padding: "10px", fontFamily: bodyFont, fontSize: 12, color: "#8A7E6C" }}>
+              {t("noOptions")}
             </div>
           )}
         </div>
@@ -559,6 +723,7 @@ function DualRangeSlider({ min, max, step, value, onChange, format }) {
    GALLERY
 --------------------------------------------------------- */
 function Gallery({ artworks, title, intro }) {
+  const { t, tv, lang, bodyFont, displayFont } = useLang();
   const [numQuery, setNumQuery] = useState("");
   const [titleQuery, setTitleQuery] = useState("");
   const [subjects, setSubjects] = useState([]);
@@ -639,7 +804,7 @@ function Gallery({ artworks, title, intro }) {
   };
 
   const selectStyle = {
-    fontFamily: "'Assistant', sans-serif",
+    fontFamily: bodyFont,
     fontSize: 13,
     padding: "9px 10px",
     background: "#F7F3EA",
@@ -649,7 +814,7 @@ function Gallery({ artworks, title, intro }) {
     width: "100%",
   };
   const labelStyle = {
-    fontFamily: "'Assistant', sans-serif",
+    fontFamily: bodyFont,
     fontSize: 11,
     color: "#8A7E6C",
     marginBottom: 4,
@@ -657,60 +822,60 @@ function Gallery({ artworks, title, intro }) {
   };
 
   const multiFields = [
-    ["נושא", subjects, setSubjects, subjectOptions],
-    ["קבוצת טכניקה", clusters, setClusters, clusterOptions],
-    ["טכניקה מפורטת", techniques, setTechniques, techniqueOptions],
-    ["גודל — קטגוריה", sizeCats, setSizeCats, sizeCatOptions],
+    [t("filterSubject"), subjects, setSubjects, subjectOptions, (v) => tv(SUBJECT_TR, v)],
+    [t("filterClusters"), clusters, setClusters, clusterOptions, (v) => tv(CLUSTER_TR, v)],
+    [t("filterTechniques"), techniques, setTechniques, techniqueOptions, null],
+    [t("filterSizeCat"), sizeCats, setSizeCats, sizeCatOptions, (v) => tv(SIZECAT_TR, v)],
   ];
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 24px 100px" }}>
-      <h2 style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: 32, fontWeight: 700, color: "#221D17", margin: "0 0 8px" }}>{title}</h2>
-      {intro && <p style={{ fontFamily: "'Assistant', sans-serif", fontSize: 15, color: "#5F5449", maxWidth: 600, marginBottom: 26 }}>{intro}</p>}
+      <h2 style={{ fontFamily: displayFont, fontSize: 32, fontWeight: 700, color: "#221D17", margin: "0 0 8px" }}>{title}</h2>
+      {intro && <p style={{ fontFamily: bodyFont, fontSize: 15, color: "#5F5449", maxWidth: 600, marginBottom: 26 }}>{intro}</p>}
 
       <div style={{ padding: "18px 0", borderTop: "1px solid #C9BFA9", borderBottom: "1px solid #C9BFA9", marginBottom: 32 }}>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
           <div>
-            <label style={labelStyle}>חיפוש לפי כותרת</label>
+            <label style={labelStyle}>{t("searchTitle")}</label>
             <input
               value={titleQuery}
               onChange={(e) => setTitleQuery(e.target.value)}
-              placeholder="הקלידו מילה מתוך הכותרת..."
+              placeholder={t("searchTitlePlaceholder")}
               style={{ ...selectStyle, maxWidth: 240 }}
             />
           </div>
           <div>
-            <label style={labelStyle}>חיפוש לפי מספר קטלוגי</label>
+            <label style={labelStyle}>{t("searchNumber")}</label>
             <input
               value={numQuery}
               onChange={(e) => setNumQuery(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder='למשל 616'
+              placeholder={t("searchNumberPlaceholder")}
               style={{ ...selectStyle, maxWidth: 160, fontFamily: "'Roboto Mono', monospace" }}
             />
           </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14, marginBottom: 20 }}>
-          {multiFields.map(([label, selected, setSelected, options]) => (
+          {multiFields.map(([label, selected, setSelected, options, labelFor]) => (
             <div key={label}>
               <label style={labelStyle}>{label}</label>
-              <MultiSelectFilter label={label} options={options} selected={selected} setSelected={setSelected} />
+              <MultiSelectFilter label={label} options={options} selected={selected} setSelected={setSelected} labelFor={labelFor} />
             </div>
           ))}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 24 }}>
           <div>
-            <label style={labelStyle}>שנה</label>
+            <label style={labelStyle}>{t("filterYear")}</label>
             <DualRangeSlider min={yearBounds[0]} max={yearBounds[1]} step={1} value={yearRange} onChange={setYearRange} />
           </div>
           <div>
-            <label style={labelStyle}>אורך (ס"מ)</label>
-            <DualRangeSlider min={lengthBounds[0]} max={lengthBounds[1]} step={1} value={lengthRange} onChange={setLengthRange} format={(v) => `${v} ס"מ`} />
+            <label style={labelStyle}>{t("filterLength")}</label>
+            <DualRangeSlider min={lengthBounds[0]} max={lengthBounds[1]} step={1} value={lengthRange} onChange={setLengthRange} format={(v) => `${v} ${lang === "he" ? "ס\"מ" : "cm"}`} />
           </div>
           <div>
-            <label style={labelStyle}>רוחב (ס"מ)</label>
-            <DualRangeSlider min={widthBounds[0]} max={widthBounds[1]} step={1} value={widthRange} onChange={setWidthRange} format={(v) => `${v} ס"מ`} />
+            <label style={labelStyle}>{t("filterWidth")}</label>
+            <DualRangeSlider min={widthBounds[0]} max={widthBounds[1]} step={1} value={widthRange} onChange={setWidthRange} format={(v) => `${v} ${lang === "he" ? "ס\"מ" : "cm"}`} />
           </div>
         </div>
 
@@ -721,9 +886,9 @@ function Gallery({ artworks, title, intro }) {
           {hasActiveFilters && (
             <button
               onClick={clearAll}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Assistant', sans-serif", fontSize: 12, color: "#8B4A3D", textDecoration: "underline" }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: bodyFont, fontSize: 12, color: "#8B4A3D", textDecoration: "underline" }}
             >
-              נקה סינון
+              {t("clearFilters")}
             </button>
           )}
         </div>
@@ -735,7 +900,7 @@ function Gallery({ artworks, title, intro }) {
         ))}
       </div>
       {filtered.length === 0 && (
-        <div style={{ fontFamily: "'Assistant', sans-serif", color: "#6B5B4F", padding: "40px 0" }}>לא נמצאו יצירות התואמות את הסינון.</div>
+        <div style={{ fontFamily: bodyFont, color: "#6B5B4F", padding: "40px 0" }}>{t("noResults")}</div>
       )}
       <Lightbox art={active} onClose={() => setActive(null)} />
     </div>
@@ -746,9 +911,81 @@ function Gallery({ artworks, title, intro }) {
 /* ---------------------------------------------------------
    CONTACT
 --------------------------------------------------------- */
+/* ---------------------------------------------------------
+   DISCOVER (random artwork explorer)
+--------------------------------------------------------- */
+function Discover() {
+  const { t, tv, lang, bodyFont, displayFont } = useLang();
+  const [current, setCurrent] = useState(() => DISCOVER_POOL[Math.floor(Math.random() * DISCOVER_POOL.length)]);
+
+  const shuffle = () => {
+    if (DISCOVER_POOL.length <= 1) return;
+    let next;
+    do {
+      next = DISCOVER_POOL[Math.floor(Math.random() * DISCOVER_POOL.length)];
+    } while (next.id === current.id);
+    setCurrent(next);
+  };
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 100px" }}>
+      <h2 style={{ fontFamily: displayFont, fontSize: 32, fontWeight: 700, color: "#221D17", margin: "0 0 8px" }}>
+        {t("discoverTitle")}
+      </h2>
+      <p style={{ fontFamily: bodyFont, fontSize: 15, color: "#5F5449", maxWidth: 600, marginBottom: 30 }}>
+        {t("discoverIntro")}
+      </p>
+
+      <div style={{ background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 3, overflow: "hidden" }}>
+        <ArtImage
+          key={current.id}
+          sources={[localImageUrl(current.id), current.thumbUrl, current.imageUrl]}
+          alt={current.title}
+          natural
+        />
+        <div style={{ padding: 28 }}>
+          <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11, color: "#A66B33", direction: "ltr", textAlign: "right", marginBottom: 8 }}>
+            {t("catalogNo")} {current.id}
+          </div>
+          <div style={{ fontFamily: displayFont, fontSize: 26, color: "#221D17", marginBottom: 14 }}>
+            {current.title}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", fontFamily: bodyFont, fontSize: 14, color: "#3E3A33", marginBottom: 22 }}>
+            <span>{t("fieldYear")}: {current.year || t("unknown")}</span>
+            <span>{t("fieldSubject")}: {tv(SUBJECT_TR, current.subject)}</span>
+            <span>{t("fieldTechnique")}: {current.technique}</span>
+            <span>{t("fieldSize")}: {current.sizeDesc}</span>
+          </div>
+
+          <div style={{ borderTop: "1px solid #C9BFA9", paddingTop: 18 }}>
+            <div style={{ fontFamily: bodyFont, fontSize: 12, fontWeight: 700, color: "#3E4A3B", marginBottom: 8, letterSpacing: "0.03em" }}>
+              {t("analysisLabel")}
+            </div>
+            <p style={{ fontFamily: displayFont, fontStyle: "italic", fontSize: 16, lineHeight: 1.8, color: "#221D17", margin: 0 }}>
+              {current.analysis[lang] || current.analysis.he}
+            </p>
+            <p style={{ fontFamily: bodyFont, fontSize: 11, color: "#8A7E6C", marginTop: 12 }}>
+              {t("analysisDisclaimer")}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ textAlign: "center", marginTop: 28 }}>
+        <button onClick={shuffle} style={{ ...btnPrimary, fontSize: 15, padding: "14px 32px" }}>
+          {t("shuffleBtn")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 function Contact() {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const { t, lang, bodyFont, displayFont } = useLang();
+  const contactName = lang === "he" ? "דבורה זילבר" : "Devora Silber";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -772,21 +1009,21 @@ function Contact() {
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "48px 24px 100px" }}>
-      <h2 style={{ fontFamily: "'Frank Ruhl Libre', serif", fontSize: 32, fontWeight: 700, color: "#221D17", marginBottom: 8 }}>צרו קשר</h2>
-      <p style={{ fontFamily: "'Assistant', sans-serif", fontSize: 15, color: "#5F5449", maxWidth: 520, marginBottom: 40 }}>
-        לפניות בנוגע לאוסף, לתערוכות או לשימוש ביצירות.
+      <h2 style={{ fontFamily: displayFont, fontSize: 32, fontWeight: 700, color: "#221D17", marginBottom: 8 }}>{t("contactTitle")}</h2>
+      <p style={{ fontFamily: bodyFont, fontSize: 15, color: "#5F5449", maxWidth: 520, marginBottom: 40 }}>
+        {t("contactIntro")}
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.1fr", gap: 56 }} className="contact-grid">
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-          <div style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, color: "#221D17" }}>דבורה זילבר</div>
+          <div style={{ fontFamily: bodyFont, fontSize: 14, color: "#221D17" }}>{contactName}</div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <Phone size={16} color="#A66B33" />
             <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 14, color: "#221D17", direction: "ltr" }}>054-563-6612</span>
           </div>
         </div>
         {sent ? (
-          <div style={{ fontFamily: "'Assistant', sans-serif", fontSize: 15, color: "#3E4A3B", padding: "20px 0" }}>
-            ההודעה נשלחה בהצלחה. תודה שפניתם!
+          <div style={{ fontFamily: bodyFont, fontSize: 15, color: "#3E4A3B", padding: "20px 0" }}>
+            {t("formSuccess")}
           </div>
         ) : (
           <form
@@ -800,25 +1037,25 @@ function Contact() {
             <input
               name="name"
               required
-              placeholder="שם"
-              style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }}
+              placeholder={t("formName")}
+              style={{ fontFamily: bodyFont, fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }}
             />
             <input
               name="email"
               type="email"
               required
-              placeholder="אימייל"
-              style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }}
+              placeholder={t("formEmail")}
+              style={{ fontFamily: bodyFont, fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17" }}
             />
             <textarea
               name="message"
               required
-              placeholder="הודעה"
+              placeholder={t("formMessage")}
               rows={5}
-              style={{ fontFamily: "'Assistant', sans-serif", fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17", resize: "vertical" }}
+              style={{ fontFamily: bodyFont, fontSize: 14, padding: "12px 14px", background: "#F7F3EA", border: "1px solid #C9BFA9", borderRadius: 2, color: "#221D17", resize: "vertical" }}
             />
             <button type="submit" disabled={sending} style={{ ...btnPrimary, alignSelf: "flex-start", opacity: sending ? 0.6 : 1 }}>
-              {sending ? "שולח..." : "שליחה"}
+              {sending ? t("formSending") : t("formSubmit")}
             </button>
           </form>
         )}
@@ -831,60 +1068,113 @@ function Contact() {
 /* ---------------------------------------------------------
    APP
 --------------------------------------------------------- */
+function LanguageSwitcher() {
+  const { lang, setLang } = useLang();
+  const langs = [
+    ["he", "HE"],
+    ["en", "EN"],
+    ["es", "ES"],
+  ];
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: 4,
+        padding: "8px 0",
+        background: "#221D17",
+      }}
+    >
+      {langs.map(([code, label]) => (
+        <button
+          key={code}
+          onClick={() => setLang(code)}
+          style={{
+            background: lang === code ? "#F7F3EA" : "transparent",
+            color: lang === code ? "#221D17" : "#C9BFA9",
+            border: "1px solid #4A4136",
+            borderRadius: 3,
+            padding: "3px 10px",
+            fontFamily: "'Roboto Mono', monospace",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+            cursor: "pointer",
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
+  const [lang, setLang] = useState("he");
+  const dir = lang === "he" ? "rtl" : "ltr";
+  const t = (key) => (UI[key] ? UI[key][lang] || UI[key].he : key);
+  const tvBound = (dict, hebrewValue) => tv(dict, hebrewValue, lang);
+
   const selectedWorks = useMemo(
     () => ARTWORKS.filter((a) => a.index % SELECTED_EVERY_N === 0),
     []
   );
 
+  const bodyFont = "'Assistant', sans-serif";
+  const displayFont = "'Frank Ruhl Libre', serif";
+
   return (
-    <div dir="rtl" style={{ background: "#EFE9DD", minHeight: "100vh" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap');
-        * { box-sizing: border-box; }
-        input::placeholder, textarea::placeholder { color: #A79A85; }
-        .range-thumb { -webkit-appearance: none; appearance: none; height: 28px; }
-        .range-thumb::-webkit-slider-thumb {
-          -webkit-appearance: none; appearance: none;
-          pointer-events: auto; cursor: pointer;
-          width: 16px; height: 16px; border-radius: 50%;
-          background: #3E4A3B; border: 2px solid #F7F3EA; box-shadow: 0 0 0 1px #C9BFA9;
-        }
-        .range-thumb::-moz-range-thumb {
-          pointer-events: auto; cursor: pointer;
-          width: 16px; height: 16px; border-radius: 50%;
-          background: #3E4A3B; border: 2px solid #F7F3EA; box-shadow: 0 0 0 1px #C9BFA9;
-        }
-        .range-thumb::-webkit-slider-runnable-track { background: transparent; }
-        .range-thumb::-moz-range-track { background: transparent; }
-        body { direction: rtl; }
-      `}</style>
-      <Nav page={page} setPage={setPage} />
-      {page === "home" && <Home setPage={setPage} />}
-      {page === "gallery" && (
-        <Gallery
-          artworks={ARTWORKS}
-          title="גלריה מלאה"
-          intro={`${ARTWORKS.length} יצירות קטלוגיות, ניתנות לסינון לפי נושא ותקופה.`}
-        />
-      )}
-      {page === "selected" && (
-        <Gallery artworks={selectedWorks} title="יצירות נבחרות" intro="מבחר ראשוני שנפרש על פני הארכיון — יעודכן בהמשך לפי בחירה אישית." />
-      )}
-      {page === "contact" && <Contact />}
-      <div
-        style={{
-          borderTop: "1px solid #C9BFA9",
-          padding: "24px",
-          textAlign: "center",
-          fontFamily: "'Assistant', sans-serif",
-          fontSize: 12,
-          color: "#8A7E6C",
-        }}
-      >
-        אריה ברמץ — שמן על בד (C) כל הזכויות שמורות למשפחה
+    <LanguageContext.Provider value={{ lang, dir, t, tv: tvBound, setLang, bodyFont, displayFont }}>
+      <div dir={dir} style={{ background: "#EFE9DD", minHeight: "100vh" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+          * { box-sizing: border-box; }
+          input::placeholder, textarea::placeholder { color: #A79A85; }
+          .range-thumb { -webkit-appearance: none; appearance: none; height: 28px; }
+          .range-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            pointer-events: auto; cursor: pointer;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #3E4A3B; border: 2px solid #F7F3EA; box-shadow: 0 0 0 1px #C9BFA9;
+          }
+          .range-thumb::-moz-range-thumb {
+            pointer-events: auto; cursor: pointer;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #3E4A3B; border: 2px solid #F7F3EA; box-shadow: 0 0 0 1px #C9BFA9;
+          }
+          .range-thumb::-webkit-slider-runnable-track { background: transparent; }
+          .range-thumb::-moz-range-track { background: transparent; }
+          body { direction: ${dir}; }
+        `}</style>
+        <LanguageSwitcher />
+        <Nav page={page} setPage={setPage} />
+        {page === "home" && <Home setPage={setPage} />}
+        {page === "gallery" && (
+          <Gallery
+            artworks={ARTWORKS}
+            title={t("galleryTitle")}
+            intro={`${ARTWORKS.length} ${t("galleryIntro")}`}
+          />
+        )}
+        {page === "selected" && (
+          <Gallery artworks={selectedWorks} title={t("selectedTitle")} intro={t("selectedIntro")} />
+        )}
+        {page === "discover" && <Discover />}
+        {page === "contact" && <Contact />}
+        <div
+          style={{
+            borderTop: "1px solid #C9BFA9",
+            padding: "24px",
+            textAlign: "center",
+            fontFamily: bodyFont,
+            fontSize: 12,
+            color: "#8A7E6C",
+          }}
+        >
+          {t("footer")}
+        </div>
       </div>
-    </div>
+    </LanguageContext.Provider>
   );
 }
