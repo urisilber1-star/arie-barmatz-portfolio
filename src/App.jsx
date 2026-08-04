@@ -101,6 +101,9 @@ const UI = {
   contactTitle: { he: "צרו קשר", en: "Contact", es: "Contacto", ar: "اتصل بنا" },
   contactIntro: { he: "לפניות בנוגע לאוסף, לתערוכות או לשימוש ביצירות.", en: "For inquiries about the collection, exhibitions, or use of the artworks.", es: "Para consultas sobre la colección, exposiciones o el uso de las obras.", ar: "للاستفسارات المتعلقة بالمجموعة أو المعارض أو استخدام الأعمال." },
   contactRelation: { he: "בתו הבכורה של אריה", en: "Arie's eldest daughter", es: "Hija mayor de Arie", ar: "الابنة الكبرى لآري" },
+
+  teaserHeading: { he: "רוצים לגלות עוד?", en: "Want to explore more?", es: "¿Quieres explorar más?", ar: "هل تريد استكشاف المزيد؟" },
+  teaserCta: { he: "המשך לגילוי אקראי ←", en: "Continue to Discover →", es: "Continuar a Descubrir →", ar: "الانتقال إلى الاكتشاف ←" },
   formName: { he: "שם", en: "Name", es: "Nombre", ar: "الاسم" },
   formEmail: { he: "אימייל", en: "Email", es: "Correo electrónico", ar: "البريد الإلكتروني" },
   formMessage: { he: "הודעה", en: "Message", es: "Mensaje", ar: "الرسالة" },
@@ -548,7 +551,65 @@ function Home({ setPage }) {
         ))}
       </div>
 
+      <HomeTeaser setPage={setPage} />
+
       <style>{`@media (max-width: 800px) { .home-grid { grid-template-columns: 1fr !important; } }`}</style>
+    </div>
+  );
+}
+
+function HomeTeaser({ setPage }) {
+  const { t, tv, lang, displayFont, bodyFont } = useLang();
+  const analyzedIds = Object.keys(ANALYSES);
+  const [pick] = useState(() => {
+    const pool = analyzedIds.length ? analyzedIds : ARTWORKS.map((a) => a.id);
+    const pickId = pool[Math.floor(Math.random() * pool.length)];
+    return ARTWORKS.find((a) => a.id === pickId) || ARTWORKS[0];
+  });
+  const analysis = ANALYSES[pick.id];
+
+  const goToDiscover = () => {
+    window.location.hash = `/discover/${pick.id}`;
+    setPage("discover");
+  };
+
+  return (
+    <div style={{ marginTop: 64, borderTop: "1px solid #C9BFA9", paddingTop: 40 }}>
+      <h2 style={{ fontFamily: displayFont, fontSize: 22, fontWeight: 700, color: "#221D17", marginBottom: 20, textAlign: "center" }}>
+        {t("teaserHeading")}
+      </h2>
+      <div
+        onClick={goToDiscover}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "160px 1fr",
+          gap: 20,
+          maxWidth: 640,
+          margin: "0 auto",
+          cursor: "pointer",
+          background: "#F7F3EA",
+          border: "1px solid #C9BFA9",
+          borderRadius: 3,
+          overflow: "hidden",
+          alignItems: "stretch",
+        }}
+        className="teaser-card"
+      >
+        <ArtImage sources={[localImageUrl(pick.id), pick.thumbUrl, pick.imageUrl]} alt={pick.title} />
+        <div style={{ padding: "16px 20px 16px 0", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ fontFamily: displayFont, fontSize: 17, color: "#221D17", marginBottom: 6 }}>{pick.title}</div>
+          <div style={{ fontFamily: bodyFont, fontSize: 12, color: "#8A7E6C", marginBottom: 10 }}>
+            {pick.year} · {tv(SUBJECT_TR, pick.subject)}
+          </div>
+          {analysis && (
+            <p style={{ fontFamily: bodyFont, fontSize: 13, color: "#5F5449", lineHeight: 1.6, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              {analysis[lang] || analysis.he}
+            </p>
+          )}
+          <span style={{ fontFamily: bodyFont, fontSize: 13, fontWeight: 700, color: "#3E4A3B" }}>{t("teaserCta")}</span>
+        </div>
+      </div>
+      <style>{`@media (max-width: 560px) { .teaser-card { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 }
@@ -1041,7 +1102,8 @@ function SelectedWorks({ initialArtworkId }) {
         const ids = DECADE_SELECTION[decade];
         const works = ids.map((id) => ARTWORKS.find((a) => a.id === id)).filter(Boolean);
         if (!works.length) return null;
-        const label = lang === "he" ? `${t("decadeLabel")}${decade % 100}` : `${t("decadeLabel")} ${decade}${decadeSuffix}`;
+        const heYear = decade >= 2000 ? decade : decade % 100;
+        const label = lang === "he" ? `${t("decadeLabel")}${heYear}` : `${t("decadeLabel")} ${decade}${decadeSuffix}`;
         return (
           <div key={decade} style={{ marginBottom: 48 }}>
             <div
