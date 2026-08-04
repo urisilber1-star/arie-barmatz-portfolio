@@ -503,7 +503,7 @@ function Nav({ page, setPage }) {
 /* ---------------------------------------------------------
    HOME
 --------------------------------------------------------- */
-function Home({ setPage }) {
+function Home({ setPage, goToArtwork }) {
   const { t, displayFont, bodyFont, lang } = useLang();
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "56px 24px 100px" }}>
@@ -551,14 +551,14 @@ function Home({ setPage }) {
         ))}
       </div>
 
-      <HomeTeaser setPage={setPage} />
+      <HomeTeaser goToArtwork={goToArtwork} />
 
       <style>{`@media (max-width: 800px) { .home-grid { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 }
 
-function HomeTeaser({ setPage }) {
+function HomeTeaser({ goToArtwork }) {
   const { t, tv, lang, displayFont, bodyFont } = useLang();
   const analyzedIds = Object.keys(ANALYSES);
   const [pick] = useState(() => {
@@ -568,10 +568,7 @@ function HomeTeaser({ setPage }) {
   });
   const analysis = ANALYSES[pick.id];
 
-  const goToDiscover = () => {
-    window.location.hash = `/discover/${pick.id}`;
-    setPage("discover");
-  };
+  const goToDiscover = () => goToArtwork("discover", pick.id);
 
   return (
     <div style={{ marginTop: 64, borderTop: "1px solid #C9BFA9", paddingTop: 40 }}>
@@ -1386,6 +1383,12 @@ export default function App() {
     setInitialArtworkId(null);
   };
 
+  const goToArtwork = (p, id) => {
+    window.location.hash = `/${p}/${id}`;
+    setPageState(p);
+    setInitialArtworkId(id);
+  };
+
   const bodyFont = "'Assistant', sans-serif";
   const displayFont = "'Frank Ruhl Libre', serif";
 
@@ -1414,7 +1417,7 @@ export default function App() {
         `}</style>
         <LanguageSwitcher />
         <Nav page={page} setPage={setPage} />
-        {page === "home" && <Home setPage={setPage} />}
+        {page === "home" && <Home setPage={setPage} goToArtwork={goToArtwork} />}
         {page === "gallery" && (
           <Gallery
             artworks={ARTWORKS}
