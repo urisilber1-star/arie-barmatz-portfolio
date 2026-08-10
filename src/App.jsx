@@ -57,6 +57,14 @@ const UI = {
     ],
   },
 
+  recognitionTitle: { he: "בתערוכה ובכתובים", en: "Exhibition & Scholarship", es: "Exposición y estudio académico" },
+  recognitionBody: {
+    he: `בדצמבר 2016 הוצגה יצירתו של אריה ברמץ בתערוכת יחיד באוניברסיטת בר-אילן, בגלריית ליבר לאמנות יהודית, תחת הכותרת "אני מאת עצמי". קטלוג התערוכה כלל מאמר מחקרי מאת ד"ר מור פרסיאדו, שבחן את הסמליות היהודית והמציאות הישראלית ביצירתו, ופורסם בכתב העת "אמנות ומחקר" של המרכז לתערוכות אמנות יהודית ע"ש גרשון ויהודית ליבר.`,
+    en: `In December 2016, Arie Barmatz's work was the subject of a solo exhibition, "Me, By Myself," at the Leiber Gallery for Jewish Art, Bar-Ilan University. The exhibition catalog included a scholarly essay by Dr. Mor Presiado examining Jewish symbolism and Israeli reality in his work, published by the Gershon and Judith Leiber Center for Jewish Art Exhibitions.`,
+    es: `En diciembre de 2016, la obra de Arie Barmatz fue objeto de una exposición individual, "Yo, por mí mismo", en la Galería Leiber de Arte Judío de la Universidad Bar-Ilan. El catálogo de la exposición incluyó un ensayo académico de la Dra. Mor Presiado sobre el simbolismo judío y la realidad israelí en su obra, publicado por el Centro Gershon y Judith Leiber para Exposiciones de Arte Judío.`,
+  },
+  recognitionLink: { he: "לקטלוג התערוכה המלא (PDF)", en: "Read the full exhibition catalog (PDF)", es: "Leer el catálogo completo de la exposición (PDF)" },
+
   galleryTitle: { he: "גלריה מלאה", en: "Full Gallery", es: "Galería completa" },
   galleryIntro: { he: "יצירות קטלוגיות, ניתנות לסינון לפי נושא, טכניקה, שנה, גודל ועוד.", en: "Cataloged artworks, filterable by subject, technique, year, size, and more.", es: "Obras catalogadas, filtrables por tema, técnica, año, tamaño y más." },
   selectedTitle: { he: "יצירות נבחרות", en: "Selected Works", es: "Obras seleccionadas" },
@@ -216,6 +224,12 @@ function localImageUrl(id) {
 
 const PORTRAIT_URL =
   "https://static.wixstatic.com/media/f3aabf_d4a4d16832cc404a93c3e848ed570c97~mv2.png";
+
+// 2016 Bar-Ilan University / Leiber Center for Jewish Art solo exhibition
+// catalog ("Ani Me'atzmi" / "Me, By Myself"), including Dr. Mor Presiado's
+// scholarly essay on Jewish symbolism in Barmatz's work.
+const EXHIBITION_CATALOG_URL =
+  "https://jart.biu.ac.il/sites/jart/files/shared/Art-and-Research/leiber-bremetz-vol2.pdf";
 
 // Every N-th row (by order in the sheet) is shown on the "Selected Works"
 // page as a placeholder curation — replace with a real list of IMG numbers
@@ -564,6 +578,21 @@ function Home({ setPage, goToArtwork }) {
             {paragraph}
           </p>
         ))}
+      </div>
+
+      <div style={{ fontFamily: bodyFont, fontSize: 16, lineHeight: 1.9, color: "#3E3A33", maxWidth: 760, margin: "40px auto 0", borderInlineStart: "3px solid #A66B33", padding: "4px 22px" }}>
+        <h3 style={{ fontFamily: displayFont, fontSize: 19, fontWeight: 700, color: "#221D17", marginBottom: 10 }}>
+          {t("recognitionTitle")}
+        </h3>
+        <p style={{ marginBottom: 14 }}>{t("recognitionBody")}</p>
+        <a
+          href={EXHIBITION_CATALOG_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#A66B33", fontWeight: 600, textDecoration: "underline" }}
+        >
+          {t("recognitionLink")} ↗
+        </a>
       </div>
 
       <HomeTeaser goToArtwork={goToArtwork} />
