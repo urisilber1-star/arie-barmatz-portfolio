@@ -17,8 +17,8 @@ function useLang() {
 
 const UI = {
   navHome: { he: "בית", en: "Home", es: "Inicio" },
-  navGallery: { he: "גלריה מלאה", en: "Full Gallery", es: "Galería completa" },
-  navSelected: { he: "יצירות נבחרות", en: "Selected Works", es: "Obras seleccionadas" },
+  navGallery: { he: "גלריה", en: "Gallery", es: "Galería" },
+  navSelected: { he: "נבחרות", en: "Selected", es: "Selección" },
   navContact: { he: "צרו קשר", en: "Contact", es: "Contacto" },
   navPublications: { he: "פרסומים", en: "Publications", es: "Publicaciones" },
   siteName: { he: "אריה ברמץ", en: "Arie Barmatz", es: "Arie Barmatz" },
@@ -138,7 +138,7 @@ const UI = {
 
   footer: { he: "אריה ברמץ — שמן על בד © כל הזכויות שמורות למשפחה", en: "Arie Barmatz — Oil on Canvas © All rights reserved to the family", es: "Arie Barmatz — Óleo sobre lienzo © Todos los derechos reservados a la familia" },
 
-  navDiscover: { he: "גילוי אקראי", en: "Discover", es: "Descubrir" },
+  navDiscover: { he: "גילוי", en: "Discover", es: "Descubrir" },
   discoverTitle: { he: "גילוי אקראי", en: "Discover", es: "Descubrir" },
   discoverIntro: { he: "לחצו על הכפתור כדי לגלות יצירה אקראית מהאוסף, לצד ניתוח קצר.", en: "Press the button to discover a random artwork from the collection, along with a short analysis.", es: "Pulse el botón para descubrir una obra aleatoria de la colección, junto con un breve análisis." },
   shuffleBtn: { he: "יצירה אקראית", en: "Shuffle", es: "Aleatorio" },
