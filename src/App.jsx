@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Menu, X, Mail, Phone, ImageOff } from "lucide-react";
+import { Analytics } from '@vercel/analytics/react';
 
 /* ---------------------------------------------------------
    INTERNATIONALIZATION
@@ -1601,6 +1602,7 @@ export default function App() {
           {t("footer")}
         </div>
       </div>
+    <Analytics />
     </LanguageContext.Provider>
   );
 }
