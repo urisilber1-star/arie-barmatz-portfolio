@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "arie-barmatz-portfolio.vercel.app"
+        }
+      ],
+      "destination": "https://ariebarmatz.art/:path*",
+      "permanent": true
+    }
+  ]
+}
