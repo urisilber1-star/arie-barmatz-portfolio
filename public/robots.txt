@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://arie-barmatz-portfolio.vercel.app/sitemap.xml
+Sitemap: https://ariebarmatz.art/sitemap.xml
